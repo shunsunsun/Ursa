@@ -16,8 +16,8 @@ plot_ploidy <- function(results, output_dir){
     # geom_point(alpha = 0.6)+
     geom_tile(size = 0.8)+
     xlab("Chromosome Positions") + ylab("") +
-    scale_color_manual(values = color_heatmap)+
-    scale_fill_manual(values = color_heatmap)+
+    scale_color_manual(values = results@color_schemes$color_heatmap)+
+    scale_fill_manual(values = results@color_schemes$color_heatmap)+
     facet_grid(.~chrom, scales = "free", switch = "x", space = "free_x")+
     ggtitle(paste(sample_id, ", ", signif(length(which(current$Ploidy == "2"))/nrow(current)*100,3), "% diploid"))
 
@@ -25,7 +25,7 @@ plot_ploidy <- function(results, output_dir){
     geom_bar(mapping = aes(x = 1, y = id, fill = Cell_Ploidy), stat = "identity", width = 1)+
     theme_void()+
     theme(panel.spacing.x = unit(1, "mm")) +
-    scale_fill_manual(values = cell_ploidy_colors)
+    scale_fill_manual(values = results@color_schemes$cell_ploidy_colors)
 
   legend <- plot_grid(get_legend(p2), get_legend(p1), ncol = 1)
   p1 <- p1 + theme(legend.position = "none")
