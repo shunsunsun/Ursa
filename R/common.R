@@ -323,3 +323,47 @@ plot_slice <- function(plotx, plot_title, col = c(NULL,"default"), is.facet = FA
 
 }
 
+gen10x_plotx <- function(data, groups = NULL, selected = "ALL", include_meta = FALSE){
+  if(toupper(selected[1]) == "ALL"){
+    plotx <- data.frame(UMAP_1 = data@reductions$umap@cell.embeddings[,"UMAP_1"],
+                        UMAP_2 = data@reductions$umap@cell.embeddings[,"UMAP_2"],
+                        tSNE_1 = data@reductions$tsne@cell.embeddings[,"tSNE_1"],
+                        tSNE_2 = data@reductions$tsne@cell.embeddings[,"tSNE_2"],
+                        PC_1 = data@reductions$pca@cell.embeddings[,"PC_1"],
+                        PC_2 = data@reductions$pca@cell.embeddings[,"PC_2"])
+  }else{
+    for(i in 1:length(selected)){
+      if(i == 1){
+        if(toupper(selected[i]) == "UMAP_SELECTED"){
+          plotx <- data.frame(data@reductions[[tolower(selected[i])]]@cell.embeddings[,grep(paste(paste(gsub("_SELECTED","",selected[i], ignore.case = T),c("_1$","_2$"), sep = ""), collapse = "|"), colnames(data@reductions[[tolower(selected[i])]]@cell.embeddings), ignore.case = T)])
+        }else{
+          plotx <- data.frame(data@reductions[[tolower(selected[i])]]@cell.embeddings[,grep(paste(paste(gsub("PCA|PCA_SELECTED","PC",selected[i], ignore.case = T),c("_1$","_2$"), sep = ""), collapse = "|"), colnames(data@reductions[[tolower(selected[i])]]@cell.embeddings), ignore.case = T)])
+        }
+        colnames(plotx) <- paste(toupper(gsub("PCA","PC",selected[i], ignore.case = T)),c("_1","_2"), sep = "")
+      }else{
+        if(toupper(selected[i]) == "UMAP_SELECTED"){
+          temp <- data.frame(data@reductions[[tolower(selected[i])]]@cell.embeddings[,grep(paste(paste(gsub("_SELECTED","",selected[i], ignore.case = T),c("_1$","_2$"), sep = ""), collapse = "|"), colnames(data@reductions[[tolower(selected[i])]]@cell.embeddings), ignore.case = T)])
+        }else{
+          temp <- data.frame(data@reductions[[tolower(selected[i])]]@cell.embeddings[,grep(paste(paste(gsub("PCA|PCA_SELECTED","PC",selected[i], ignore.case = T),c("_1$","_2$"), sep = ""), collapse = "|"), colnames(data@reductions[[tolower(selected[i])]]@cell.embeddings), ignore.case = T)])
+        }
+        colnames(temp) <- paste(toupper(gsub("PCA","PC",selected[i], ignore.case = T)),c("_1","_2"), sep = "")
+        plotx <- cbind(plotx, temp)
+      }
+    }
+    colnames(plotx) <- toupper(gsub("PCA_([0-9]+)$","PC_\\1",colnames(plotx), ignore.case = T))
+    colnames(plotx) <- toupper(gsub("tSNE","tSNE",colnames(plotx), ignore.case = T))
+  }
+
+  if(!is.null(groups)){
+    for(i in 1:length(groups)){
+      plotx[,groups[i]] <- data@meta.data[,groups[i]]
+    }
+  }
+
+  if(include_meta == TRUE){
+    plotx <- cbind(data@meta.data, plotx)
+  }
+
+  return(plotx)
+
+}
