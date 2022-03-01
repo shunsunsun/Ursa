@@ -42,6 +42,8 @@ scImmunePip <- function(project_name = "Polaris_scImmune",
   print("Initialising pipeline environment..")
   pheno_data <- pheno_ini(pheno_file, pipeline = "scIMMUNE", isDir = T)
   pheno_data$SID <- paste(pheno_data$SAMPLE_ID, pheno_data$GROUP, pheno_data$CELL_TYPE, sep = "_")
+  color_conditions <- color_ini()
+  ctime <- time_ini()
   sample_colors <- gen_colors(color_conditions$manycolors, length(unique(pheno_data$SID)))
   names(sample_colors) <- unique(pheno_data$SID)
   project_name <- gsub("\\s+|\\(|\\)|-|\\/|\\?","",project_name)
@@ -51,8 +53,6 @@ scImmunePip <- function(project_name = "Polaris_scImmune",
   hpca.se <- HumanPrimaryCellAtlasData()
   contig_dir <- paste(cdir, "/Contig/", sep = "")
   dir.create(contig_dir)
-  color_conditions <- color_ini()
-  ctime <- time_ini()
   sample_files <- list.files(input_dir, recursive = T, full.names = T)
   sample_files <- sample_files[grep("_MACOSX",sample_files, ignore.case = T, invert = T)]
   sample_files <- sample_files[grep(gsub(".*\\/(.*)","\\1",pheno_file, ignore.case = T),sample_files, ignore.case = T, invert = T)]
