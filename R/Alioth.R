@@ -1,21 +1,44 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Alkaid: scRNASEQ
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
-#' @importFrom Seurat
-#' @importFrom ggplot2
-#' @importFrom Signac
-#' @importFrom chromVAR
-#' @importFrom GenomeInfoDb
-#' @importFrom patchwork
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
 #' @importFrom dplyr
+#' @importFrom ggplot2
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
 #' @importFrom gridExtra
-#' @importFrom motifmatchr
-#' @importFrom JASPAR2020
-#' @importFrom TFBSTools
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom akmedoids
+#' @importFrom celldex
+#' @importFrom celltalker
+#' @importFrom DOSE
+#' @importFrom enrichplot
+#' @importFrom harmony
+#' @importFrom HGNChelper
+#' @importFrom htmlwidgets
+#' @importFrom monocle3
+#' @importFrom org.Hs.eg.db
+#' @importFrom plotly
+#' @importFrom Seurat
+#' @importFrom SeuratWrappers
+#' @importFrom SingleR
 #'
 NULL
 
@@ -35,13 +58,26 @@ NULL
 #' created under the specified output directory.
 #' @param pheno_file Meta data file directory. Accept only .csv/.txt format
 #' files.
+#' @param integration_method Integration method. Accepts 'Seurat' or "Harmony'
+#' integration. Default is Seurat.
+#' @param cc_regression Cell cycle regression method. Accepts 0 for no regression,
+#' 1 for regression with two-phases, 2 for regression with phase difference (See Seurat).
+#' Default is 0.
 #' @export
 #'
 scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
                       input_dir = "./",
                       output_dir = "./",
-                      pheno_file){
+                      pheno_file,
+                      integration_method = "Seurat",
+                      cc_regression = 0){
   print("Initialising pipeline environment..")
+  hs <- org.Hs.eg.db
+  hgnc.table <- data("hgnc.table", package="HGNChelper")
+  hpca.se <- HumanPrimaryCellAtlasData()
+  s.genes <- cc.genes$s.genes
+  g2m.genes <- cc.genes$g2m.genes
+
   pheno_data <- pheno_ini(pheno_file, pipeline = "scRNASEQ", isDir = T)
   pheno_data$SID <- paste(pheno_data$SAMPLE_ID, pheno_data$GROUP, sep = "_")
   color_conditions <- color_ini()
@@ -53,636 +89,1658 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
   cdir <- paste(output_dir,project_name,"_",ctime,"/", sep = "")
   dir.create(cdir)
 
-  pheno_peak <- list.files(input_dir, pattern = ".*peak.*h5", full.names = T, ignore.case = T, recursive = T)
-  pheno_singlecell <- list.files(input_dir, pattern = ".*singlecell\\.csv$|.*per_barcode_metrics\\.csv$", full.names = T, ignore.case = T, recursive = T)
-  pheno_fragments <- list.files(input_dir, pattern = ".*fragment.*tsv.*", full.names = T, ignore.case = T, recursive = T)
-  pheno_fragments <- pheno_fragments[grep("\\.tbi", pheno_fragments, ignore.case = T, invert = T)]
-  error_files <- list.files(input_dir, pattern = "gz\\.tsv$", full.names = T, ignore.case = T)
-
-  if(length(error_files) > 0){
-    for(i in 1:length(error_files)){
-      current_corrected_file <- gsub("gz\\.tsv","gz",error_files[i])
-      system(paste("mv ", error_files[i], " ",current_corrected_file, sep = ""))
-    }
-  }
-
+  sample_files <- list.files(input_dir, pattern = ".*h5", full.names = T, ignore.case = T, recursive = T)
+  sample_files <- sample_files[grep("_MACOSX",sample_files, ignore.case = T, invert = T)]
+  #######################################################################################################################################
+  print("Preparing..")
   data <- NULL
-  sample_names <- NULL
+  data_current <- NULL
+  annot_names <- NULL
   results <- NULL
-  for(i in 1:nrow(pheno_data)){
-    print(paste("Running ", pheno_data[i,"FILE"], "..", sep = ""))
-    sample_names <- c(sample_names, pheno_data[i,"SID"])
-    current <- NULL
-    current <- pheno_peak[grep(pheno_data[i,"FILE"], pheno_peak, ignore.case = T)]
-    current <- Read10X_h5(current)
-    current_singlecell <- NULL
-    current_singlecell <- pheno_singlecell[grep(pheno_data[i,"FILE"], pheno_singlecell, ignore.case = T)]
 
-    if(length(current_singlecell) > 0){
-      current_meta <- "YES"
-      current_singlecell <- read.csv(file = current_singlecell, header = TRUE, row.names = 1)
+  for(j in 1:nrow(pheno_data)){
+    print(paste("Running ", pheno_data[j,"FILE"], "..", sep = ""))
+    annot_names <- c(annot_names, pheno_data[j,"SID"])
+    data_current[[j]] <- NULL
+    data_current[[j]] <- sample_files[grep(pheno_data[j,"FILE"], sample_files, ignore.case = T)]
+    data_current[[j]] <- Read10X_h5(data_current[[j]])
+    if((length(data_current[[j]]) == 1) | (length(data_current[[j]]) > 10)){
+      data_current[[j]] <- CreateSeuratObject(counts = data_current[[j]], project = annot_names[j], min.cells = 3, min.features = 200)
     }else{
-      current_meta <- "NO"
+      data_current[[j]] <- CreateSeuratObject(counts = data_current[[j]]$`Gene Expression`, project = annot_names[j], min.cells = 3, min.features = 200)
     }
 
-    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      ref_genome <- "hg19"
-      load("DB/hg19_EnsDb.Hsapiens.v75.RData")
-      # load("/mnt/REFERENCE/hg19_EnsDb.Hsapiens.v75.RData")
-      seqlevelsStyle(ref_annot) <- "UCSC"
-      genome(ref_annot) <- "hg19"
-    }else if(length(grep("hg38|grch38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      ref_genome <- "GRCh38.p12"
-      load("DB/hg38_EnsDb.Hsapiens.v86.RData")
-      # load("/mnt/REFERENCE/hg38_EnsDb.Hsapiens.v86.RData")
-      seqlevelsStyle(ref_annot) <- "UCSC"
-      genome(ref_annot) <- "GRCh38.p12"
+    data_current[[j]][["Percent_Mito"]] <- PercentageFeatureSet(data_current[[j]], pattern = "^MT-")
+    if(max(data_current[[j]][["Percent_Mito"]]) == 0){
+      plot_mito <- FALSE
     }else{
-      stop("You are supplying non-human samples. Please try again.")
+      plot_mito <- TRUE
     }
 
+    names(data_current)[j] <- annot_names[j]
+    data_current[[j]] <- add_names(data_current[[j]], sample_name = annot_names[j], current_ident = "orig.ident")
+    data_current[[j]]@meta.data <- cbind(data_current[[j]]@meta.data, pheno_data[j,which(colnames(pheno_data) != "SAMPLE_ID")])
+    plotx <- data_current[[j]]@meta.data
+    colnames(plotx)[grep("orig.ident", colnames(plotx), ignore.case = T)] <- "SAMPLE_ID"
 
-    print(paste("Constructing chromatin assay of ", pheno_data[i,"FILE"], "..", sep = ""))
+    p1 <- NULL
+    p2 <- NULL
+    p <- NULL
+    p1 <- own_violin(plotx, feature = "nFeature_RNA", plotx_title = "No. Genes Detected / Cell", col = color_conditions$tenx[1], title.size = 18)
+    p2 <- own_violin(plotx, feature = "nCount_RNA", plotx_title = "No. Molecules Detected / Cell", col = color_conditions$tenx[2], title.size = 18)
+    if(plot_mito == TRUE){
+      p3 <- own_violin(plotx, feature = "Percent_Mito", plotx_title = "Mitochondria Percent / Cell", col = color_conditions$tenx[3], title.size = 18)
+      p <- p1+p2+p3
+    }else{p <- p1+p2}
+    results[['p1plots']][[j]] <- p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+    names(results[['p1plots']])[j] <- pheno_data[j,"SID"]
 
-    current_assay <- CreateChromatinAssay(
-      counts = current,
-      sep = c(unique(gsub(".*?([-.:])[0-9]+([-.:])[0-9]+","\\1",row.names(current))),
-              unique(gsub(".*?([-.:])[0-9]+([-.:])[0-9]+","\\2",row.names(current)))),
-      genome = ref_genome,
-      fragments = pheno_fragments[grep(pheno_data[i,"FILE"], pheno_fragments, ignore.case = T)],
-      min.cells = 10,
-      min.features = 200)
 
-    if(current_meta == "YES"){
-      current_seurat <- CreateSeuratObject(counts = current_assay, assay = "peaks",meta.data = current_singlecell)
-      rm(current_singlecell)
+    p1 <- NULL
+    p2 <- NULL
+    p <- NULL
+    p2 <- own_feature(plotx, feature1 = "nCount_RNA", feature2 = "nFeature_RNA",
+                      title_name = annot_names[j], col = color_conditions$tenx[5],
+                      xlabel = "No. Molecules Detected/Cell", ylabel = "No. Genes Detected/Cell")
+    if(plot_mito == FALSE){
+      p <- p2 }else{
+        p1 <- own_feature(plotx, feature1 = "nCount_RNA", feature2 = "Percent_Mito",
+                          title_name = annot_names[j], col = color_conditions$tenx[4],
+                          xlabel = "No. Molecules Detected/Cell", ylabel = "Mitochondria Percent/Cell")
+        p <- p1+p2
+      }
+
+    results[['p2plots']][[j]] <- p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5)))
+    names(results[['p2plots']])[j] <- pheno_data[j,"SID"]
+
+    data_current[[j]] <- NormalizeData(data_current[[j]], verbose = TRUE)
+    data_current[[j]]@assays$RNA@data@x[is.na(data_current[[j]]@assays$RNA@data@x)] <- 0
+    data_current[[j]] <- FindVariableFeatures(data_current[[j]],selection.method = "vst")
+    data_current[[j]] <- ScaleData(data_current[[j]], features = row.names(data_current)[j])
+
+    if(nrow(data_current[[j]]) > 2000){
+      orig_gene_names <- NULL
+      scale_orig_gene_names <- NULL
+      if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+        orig_gene_names <- row.names(data_current)[j]
+        scale_orig_gene_names <- row.names(data_current[[j]]@assays$RNA@scale.data)
+        row.names(data_current[[j]]@assays$RNA@counts) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@counts), ignore.case = T)
+        row.names(data_current[[j]]@assays$RNA@data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@data), ignore.case = T)
+        row.names(data_current[[j]]@assays$RNA@scale.data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@scale.data), ignore.case = T)
+      }
+
+      data_current[[j]] <- CellCycleScoring(data_current[[j]], g2m.features=g2m.genes, s.features=s.genes, set.ident = TRUE)
+      data_current[[j]]@meta.data$Phase <- factor(data_current[[j]]@meta.data$Phase, levels = c("G1","S","G2M"))
+      data_current[[j]] <- RunPCA(data_current[[j]], features = c(s.genes, g2m.genes))
+      data_current[[j]]@reductions$pca_selected <- data_current[[j]]@reductions$pca
+
+      if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+        row.names(data_current[[j]]@assays$RNA@counts) <- orig_gene_names
+        row.names(data_current[[j]]@assays$RNA@data) <- orig_gene_names
+        row.names(data_current[[j]]@assays$RNA@scale.data) <- scale_orig_gene_names
+      }
+
+      data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
+
+      # G2/M and S Phase Markers: Tirosh et al, 2015
+      p1 <- own_2d_scatter(data_current[[j]], "pca", "Phase", "PCA Based on Variable Features")
+      p2 <- own_2d_scatter(data_current[[j]], "pca_selected", "Phase", "PCA Based on G2/M and S Phase Markers")
+      results[['p3plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p3plots']])[j] <- pheno_data[j,"SID"]
+
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
+      data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+
+      p1 <- own_2d_scatter(data_current[[j]], "umap", "Phase", "UMAP Based on Variable Features")
+      p2 <- own_2d_scatter(data_current[[j]], "umap_selected", "Phase", "UMAP Based on G2/M and S Phase Markers")
+      results[['p4plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p4plots']])[j] <- pheno_data[j,"SID"]
+
     }else{
-      current_seurat <- CreateSeuratObject(counts = current_assay, assay = "peaks")
+      data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
     }
 
-    current_seurat <- add_names(current_seurat, pheno_data[i,"SID"], current_ident = "orig.ident")
+    metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
-    rm(current_assay)
-    rm(current)
+    results[['p5plots']][[j]] <- FeaturePlot(data_current[[j]],
+                                             reduction = "umap",
+                                             features = metrics,
+                                             pt.size = 0.4,
+                                             order = TRUE,
+                                             min.cutoff = 'q10',
+                                             label = FALSE, cols = c("green","blue"))+
+      plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""),
+                      theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+    names(results[['p5plots']])[j] <- pheno_data[j,"SID"]
 
+    ########################################################################################################################
+    # Filtering
+    data_current[[j]] <- subset(data_current[[j]], subset = nFeature_RNA > 200 & nFeature_RNA <= 25000 & Percent_Mito < 5)
+    if(ncol(data_current[[j]]) > 200){
 
-    print(paste("Finding nucelosome signal for ", pheno_data[i,"FILE"], "..", sep = ""))
+      data_current[[j]] <- NormalizeData(data_current[[j]], verbose = TRUE)
+      data_current[[j]]@assays$RNA@data@x[is.na(data_current[[j]]@assays$RNA@data@x)] <- 0
+      data_current[[j]] <- FindVariableFeatures(data_current[[j]],selection.method = "vst")
+      data_current[[j]] <- ScaleData(data_current[[j]], features = rownames(data_current)[j])
 
-    DefaultAssay(current_seurat) <- 'peaks'
-    Annotation(current_seurat) <- ref_annot
-    current_seurat <- NucleosomeSignal(object = current_seurat)
+      if(cc_regression != 0 & (nrow(data_current[[j]][['RNA']]) > 2000)){
 
-    print(paste("Calculating TSS enrichment for ", pheno_data[i,"FILE"], "..", sep = ""))
-    current_seurat <- TSSEnrichment(object = current_seurat, fast = FALSE)
+        orig_gene_names <- NULL
+        scale_orig_gene_names <- NULL
 
-    print(paste("Calculating fragments for ", pheno_data[i,"FILE"], "..", sep = ""))
-    if(length(grep("peak_region_fragments", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat$pct_reads_in_peaks <- current_seurat@meta.data[,grep("peak_region_fragments", colnames(current_seurat@meta.data),ignore.case = T)] / current_seurat@meta.data[,grep("passed_filters", colnames(current_seurat@meta.data),ignore.case = T)] * 100
-      if(length(grep("blacklist_region_fragments", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-        current_seurat$blacklist_ratio <- current_seurat@meta.data[,grep("blacklist_region_fragments", colnames(current_seurat@meta.data),ignore.case = T)] / current_seurat@meta.data[,grep("peak_region_fragments", colnames(current_seurat@meta.data),ignore.case = T)]
+        if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+          orig_gene_names <- row.names(data_current)[j]
+          scale_orig_gene_names <- row.names(data_current[[j]]@assays$RNA@scale.data)
+          row.names(data_current[[j]]@assays$RNA@counts) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@counts), ignore.case = T)
+          row.names(data_current[[j]]@assays$RNA@data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@data), ignore.case = T)
+          row.names(data_current[[j]]@assays$RNA@scale.data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@scale.data), ignore.case = T)
+        }
+
+        data_current[[j]] <- CellCycleScoring(data_current[[j]], g2m.features=g2m.genes, s.features=s.genes, set.ident = TRUE)
+
+        data_current[[j]]@meta.data$Phase <- factor(data_current[[j]]@meta.data$Phase, levels = c("G1","S","G2M"))
+
+        if((cc_regression == 1)){
+          cc_method <- c("S.Score", "G2M.Score")
+          cc_type <- "Phase Scores"
+
+        }else if (cc_regression == 2){
+          data_current[[j]]$CC.Difference <- data_current[[j]]$S.Score - data_current[[j]]$G2M.Score
+          cc_method <- "CC.Difference"
+          cc_type <- "Difference"
+        }
+
+        data_current[[j]] <- ScaleData(data_current[[j]], vars.to.regress = cc_method, features = rownames(data_current)[j])
+        data_current[[j]] <- RunPCA(data_current[[j]], features = c(s.genes, g2m.genes))
+        data_current[[j]]@reductions$pca_selected <- data_current[[j]]@reductions$pca
+
+        if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+          row.names(data_current[[j]]@assays$RNA@counts) <- orig_gene_names
+          row.names(data_current[[j]]@assays$RNA@data) <- orig_gene_names
+          row.names(data_current[[j]]@assays$RNA@scale.data) <- scale_orig_gene_names
+        }
+
+        data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
+
+        p1 <- DimPlot(data_current[[j]], reduction = "pca", split.by = "Phase", cols = color_conditions$bright) +
+          ggtitle(paste("PCA Based on Variable Features", sep = ""))+
+          theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
+        p2 <- DimPlot(data_current[[j]], reduction = "pca_selected", split.by = "Phase", cols = color_conditions$bright) +
+          ggtitle(paste("PCA Based on G2/M and S Phase Markers", sep = ""))+
+          theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
+
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
+        data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+
+        metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
+
+        p1 <- NULL
+        p2 <- NULL
+        p1 <- DimPlot(data_current[[j]], reduction = "pca",split.by = "Phase", cols = color_conditions$tenx) +
+          ggtitle(paste("PCA Based on Variable Features", sep = "")) +
+          theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
+        p2 <- DimPlot(data_current[[j]], reduction = "pca_selected", split.by = "Phase", cols = color_conditions$tenx) +
+          ggtitle(paste("PCA Based on G2/M and S Phase Markers", sep = "")) +
+          theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
+
+        # G2/M and S Phase Markers: Tirosh et al, 2015
+        results[['p6plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+        names(results[['p6plots']])[j] <- pheno_data[j,"SID"]
+
+        p1 <- NULL
+        p2 <- NULL
+        p1 <- DimPlot(data_current[[j]], reduction = "umap", cols = color_conditions$tenx, split.by = "Phase") +
+          ggtitle(paste("UMAP Based on Variable Features", sep = "")) + theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
+        p2 <- DimPlot(data_current[[j]], reduction = "umap_selected", cols = color_conditions$tenx, split.by = "Phase") +
+          ggtitle(paste("UMAP Based on G2/M and S Phase Markers", sep = "")) + theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
+        results[['p7plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+        names(results[['p7plots']])[j] <- pheno_data[j,"SID"]
+
+        results[['p8plots']][[j]] <- FeaturePlot(data_current[[j]],
+                                                 reduction = "umap",
+                                                 features = metrics,
+                                                 pt.size = 0.4,
+                                                 order = TRUE,
+                                                 min.cutoff = 'q10',
+                                                 label = FALSE, cols = c("green","blue"))+
+          plot_annotation(title = paste("UMAP Post Cell Cycle Regression - ",annot_names[j], sep = ""),
+                          theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5)))
+        names(results[['p8plots']])[j] <- pheno_data[j,"SID"]
+
+      }else{
+        DefaultAssay(data_current[[j]]) <- 'RNA'
+        data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+
+        metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
+
+        results[['p8plots']][[j]] <- FeaturePlot(data_current[[j]],
+                                                 reduction = "umap",
+                                                 features = metrics,
+                                                 pt.size = 0.4,
+                                                 order = TRUE,
+                                                 min.cutoff = 'q10',
+                                                 label = FALSE, cols = c("green","blue"))+
+          plot_annotation(title = paste("UMAP Features - ",annot_names[j], sep = ""),
+                          theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5)))
+        names(results[['p8plots']])[j] <- pheno_data[j,"SID"]
+
       }
-    }
-    current_seurat$high.tss <- ifelse(current_seurat@meta.data[,grep("TSS.enrichment",colnames(current_seurat@meta.data), ignore.case = T)] > 2, 'High', 'Low')
 
-    p <- NULL
-    p <- TSSPlot(current_seurat, group.by = 'high.tss') + NoLegend()+ scale_color_manual(values = color_conditions$alternate, length(current_seurat$high.tss))
+      colnames(data_current[[j]]@assays$RNA@counts) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@counts))
+      colnames(data_current[[j]]@assays$RNA@data) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@data))
+      colnames(data_current[[j]]@assays$RNA@scale.data) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@scale.data))
+      row.names(data_current[[j]]@meta.data) <- gsub("_|-|\\s+|\\t","",row.names(data_current[[j]]@meta.data))
 
-    results[['p1plots']][[i]] <- p
-    names(results[['p1plots']])[i] <- pheno_data[i,"SID"]
+      # if(length(h5_files) > 0){
+      #   SCTRANS <- TRUE
+      #   current <- suppressWarnings(SCTransform(data_current[[j]], verbose = FALSE))
+      # }else{
+      #   SCTRANS <- FALSE
+      # }
 
-    somePNGPath <- paste(cdir,"1SCA_PLOT_NORM_TSS_ENRICHMENT_SCORES_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
-    print(results[['p1plots']][[i]]+ggtitle(paste("TSS Enrichment: ", pheno_data[i,"SID"], sep = "")))
-    dev.off()
+      plotx <- data_current[[j]]@meta.data
+      colnames(plotx)[grep("orig.ident", colnames(plotx), ignore.case = T)] <- "SAMPLE_ID"
 
-    p <- NULL
-    current_col <- grep("nucleosome_signal",colnames(current_seurat@meta.data), ignore.case = T)
-    current_seurat$nucleosome_group <- ifelse(current_seurat@meta.data[,current_col] > 4, 'NS > 4', 'NS < 4')
-    current_groups <- unique(current_seurat$nucleosome_group)
-    if(length(current_groups) == 1){
-      p <- FragmentHistogram(object = current_seurat) +
-        scale_fill_manual(values = color_conditions$manycolors, length(current_seurat$nucleosome_group))+ggtitle(paste("FRAGMENT LENGTH PERIODICITY: ", current_groups, sep = ""))
-    }else{
-      p <- FragmentHistogram(object = current_seurat, group.by = 'nucleosome_group') +
-        scale_fill_manual(values = color_conditions$manycolors, length(current_seurat$nucleosome_group))+ggtitle("FRAGMENT LENGTH PERIODICITY")
-    }
-
-    results[['p2plots']][[i]] <- p
-    names(results[['p2plots']])[i] <- pheno_data[i,"SID"]
-
-    somePNGPath <- paste(cdir,"2SCA_PLOT_FRAGMENT_LENGTH_PERIODICITY_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
-    print(results[['p2plots']][[i]]+ggtitle(paste("Fragment Length Periodicity: ", pheno_data[i,"SID"], sep = "")))
-    dev.off()
-
-    colnames(current_seurat@meta.data)[grep("pct_reads_in_peaks", colnames(current_seurat@meta.data), ignore.case = T)] <- "PCT_Reads_in_Peaks"
-    colnames(current_seurat@meta.data)[grep("blacklist_ratio", colnames(current_seurat@meta.data), ignore.case = T)] <- "Blacklist_Ratio"
-    colnames(current_seurat@meta.data)[grep("peak_region_fragments", colnames(current_seurat@meta.data), ignore.case = T)] <- "Peak_Region_Fragments"
-    colnames(current_seurat@meta.data)[grep("TSS.enrichment", colnames(current_seurat@meta.data), ignore.case = T)] <- "TSS_Enrichment"
-    colnames(current_seurat@meta.data)[grep("nucleosome_signal", colnames(current_seurat@meta.data), ignore.case = T)] <- "Nucleosome_Signal"
-
-    current_features <- colnames(current_seurat@meta.data)[grep("PCT_Reads_in_Peaks|Peak_Region_Fragments$|TSS_Enrichment$|Blacklist_Ratio$|Nucleosome_Signal$", colnames(current_seurat@meta.data), ignore.case = T)]
-
-    p <- NULL
-
-    results[['p3plots']][[i]] <- violin_plot(current_seurat, features = current_features, ncol = length(current_features),
-                                             col = sample_colors, x_lab = "SID", log_status = TRUE)
-    names(results[['p3plots']])[i] <- pheno_data[i,"SID"]
-
-    somePNGPath <- paste(cdir,"3SCA_PLOT_QUALITY_CONTROL_PEAKS_LOGSCALE_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 2000, height = 1000, units = "px", res = 150)
-    print(results[['p3plots']][[i]])
-    dev.off()
-
-    if(length(grep("Peak_Region_Fragments", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = Peak_Region_Fragments > 3000 & Peak_Region_Fragments < 20000)
-    }
-
-    if(length(grep("^nCount_peaks$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = nCount_peaks < 100000 & nCount_peaks > 1000)
-    }
-
-    if(length(grep("^PCT_Reads_in_Peaks$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = PCT_Reads_in_Peaks > 15)
-    }
-
-    if(length(grep("^Blacklist_Ratio$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = Blacklist_Ratio < 0.05)
-    }
-
-    if(length(grep("^Nucleosome_Signal$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = Nucleosome_Signal < 4)
-    }
-
-    if(length(grep("^TSS_Enrichment$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = TSS_Enrichment > 2)
-    }
-
-    if(length(grep("^nCount_RNA$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = nCount_RNA < 25000 & nCount_RNA > 1000)
-    }
-
-    if(length(grep("^nFeature_RNA$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
-    }
-
-    if(length(grep("^Percent_Mito$", colnames(current_seurat@meta.data),ignore.case = T)) > 0){
-      current_seurat <- subset(x = current_seurat, subset = Percent_Mito < 5)
-    }
-
-
-    print(paste("Running dimension reduction and clustering for ", pheno_data[i,"FILE"], "..", sep = ""))
-    DefaultAssay(current_seurat) <- "peaks"
-    current_seurat <- RunTFIDF(current_seurat)
-    current_seurat <- FindTopFeatures(current_seurat, min.cutoff = 'q0')
-    current_seurat <- RunSVD(current_seurat)
-    results[['p4plots']][[i]] <- DepthCor(current_seurat)
-    names(results[['p4plots']])[i] <- pheno_data[i,"SID"]
-
-    somePNGPath <- paste(cdir,"4SCA_PLOT_CORRELATION_SEQUENCING_DEPTH_LSI_COMPONENTS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
-    print(results[['p4plots']][[i]])
-    dev.off()
-
-    dim_i <- 2 # Skip first component with high correlation
-    m <- ifelse((length(current_seurat@assays$peaks@var.features)-1) < 30, (length(current_seurat@assays$peaks@var.features) - 1), 30)
-    current_seurat <- RunUMAP(object = current_seurat, reduction = 'lsi', dims = dim_i:m)
-    current_seurat <- FindNeighbors(object = current_seurat, reduction = 'lsi', dims = dim_i:m)
-    current_seurat <- FindClusters(object = current_seurat, verbose = FALSE, algorithm = 3)
-
-    plotx <- NULL
-    plotx <- gen10x_plotx(current_seurat, selected = c("UMAP"), include_meta = T)
-    plotx$CLUSTER <- plotx$seurat_clusters
-    cluster_colors <- gen_colors(color_conditions$tenx, length(unique(plotx$CLUSTER)))
-    names(cluster_colors) <- sort(unique(plotx$CLUSTER), decreasing = F)
-
-    p <- NULL
-    p <- plot_bygroup(plotx, "UMAP_1", "UMAP_2", group = "CLUSTER", plot_title = project_name, col = cluster_colors, annot = TRUE,
-                      numeric = T, legend_position = "right", point_size = 1, label_size = 8)
-    results[['p5plots']][[i]] <- p
-    names(results[['p5plots']])[i] <- pheno_data[i,"SID"]
-
-    somePNGPath <- paste(cdir,"5SCA_scRNASEQ_UMAP_scRNASEQ_AUTOCLUST_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
-    print(results[['p5plots']][[i]])
-    dev.off()
-
-
-    print(paste("Finding top peaks for ", pheno_data[i,"FILE"], "..", sep = ""))
-    p_thresh <- 0.05
-    DefaultAssay(current_seurat) <- "peaks"
-    da_peaks <- NULL
-    da_peaks <- FindAllMarkers(
-      object = current_seurat,
-      min.pct = 0.2,
-      test.use = 'LR',
-      return.thresh = p_thresh,
-      latent.vars = if(is.null(current_seurat@meta.data$Peak_Region_Fragments)) newobj <- NULL else newobj <- "Peak_Region_Fragments")
-
-    if(nrow(da_peaks) > 0){
-      da_peaks <- da_peaks[da_peaks$p_val_adj < p_thresh,]
-      wt <- colnames(da_peaks)[grep("log.*FC", colnames(da_peaks), ignore.case = T)]
-
-      da_peaks <- da_peaks[order(da_peaks[,wt], decreasing = TRUE),]
-      results[['p6data']][[i]] <- da_peaks
-      names(results[['p6data']])[i] <- pheno_data[i,"SID"]
-
-      write.csv(results[['p6data']][[i]], paste(cdir, "6SCA_TABLE_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
-
-      n <- 6
-      topn <- split(da_peaks, da_peaks$cluster)
-      topn <- lapply(topn, function(x){
-        x <- x[order(x[,wt]),]
-        x <- x[1:ifelse(nrow(x)>n, n, nrow(x)),]
-      })
-      topn <- do.call(rbind.data.frame, topn)
-      results[['p7data']][[i]] <- topn
-      names(results[['p7data']])[i] <- pheno_data[i,"SID"]
-      write.csv(results[['p7data']][[i]], paste(cdir, "7SCA_TABLE_TOP_",n,"_PEAKS_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
-
-      closest_genes <- NULL
-      cclusters <- unique(topn$cluster)
-      for(k in 1:length(cclusters)){
-        current <- unique(topn[which(topn$cluster == cclusters[k]),"gene"])
-        current <- data.frame(cluster = cclusters[k], ClosestFeature(current_seurat, regions = current))
-        closest_genes <- rbind(closest_genes, current)
+      p1 <- NULL
+      p2 <- NULL
+      p <- NULL
+      p1 <- own_violin(plotx, feature = "nFeature_RNA", plotx_title = "No. Genes Detected / Cell", col = color_conditions$tenx[1], title.size = 15)
+      p2 <- own_violin(plotx, feature = "nCount_RNA", plotx_title = "No. Molecules Detected / Cell", col = color_conditions$tenx[2], title.size = 15)
+      if(plot_mito == TRUE){
+        p3 <- own_violin(plotx, feature = "Percent_Mito", plotx_title = "Mitochondria Percent / Cell", col = color_conditions$tenx[3], title.size = 15)
+        p <- p1+p2+p3
+      }else{
+        p <- p1+p2
       }
-      results[['p8data']][[i]] <- closest_genes
-      names(results[['p8data']])[i] <- pheno_data[i,"SID"]
-      write.csv(results[['p8data']][[i]], paste(cdir, "8SCA_TABLE_CLOSEST_GENE_NEAR_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
-    }
+      results[['p9plots']][[j]] <- p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p9plots']])[j] <- pheno_data[j,"SID"]
 
-    print(paste("Done with top peaks search for ", pheno_data[i,"FILE"], "..", sep = ""))
-
-    print(paste("Deciphering gene activities for ", pheno_data[i,"FILE"], "..", sep = ""))
-    gene_activities <- GeneActivity(current_seurat)
-    current_seurat[['ACTIVITY']] <- CreateAssayObject(counts = gene_activities)
-    DefaultAssay(current_seurat) <- "ACTIVITY"
-    current_seurat <- NormalizeData(current_seurat)
-    current_seurat <- ScaleData(current_seurat, features = rownames(current_seurat))
-    Idents(current_seurat) <- "seurat_clusters"
-
-    print(paste("Finding top genes for ", pheno_data[i,"FILE"], "..", sep = ""))
-    current_data_markers <- FindAllMarkers(current_seurat, min.pct = 0.25, logfc.threshold = 0.25)
-    p_thresh <- 0.05
-    current_data_markers <- current_data_markers[current_data_markers$p_val_adj < p_thresh,]
-    current_data_markers <- current_data_markers[order(current_data_markers$p_val_adj, decreasing = F),]
-    results[['p9data']][[i]] <- current_data_markers
-    names(results[['p9data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p9data']][[i]], paste(cdir, "9SCA_TABLE_TOP_GENE_ACTIVITY_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
-
-    DefaultAssay(current_seurat) <- "ACTIVITY"
-    wt <- colnames(da_peaks)[grep("log.*FC", colnames(da_peaks), ignore.case = T)]
-    top1 <- split(da_peaks, da_peaks$cluster)
-    top1 <- lapply(top1, function(x){
-      x <- x[order(x[,wt]),]
-      if(nrow(x) > 0){
-        x <- x[1:ifelse(nrow(x)>1, 1, nrow(x)),]
+      p2 <- own_feature(plotx, feature1 = "nCount_RNA", feature2 = "nFeature_RNA",
+                        title_name = annot_names[j], col = color_conditions$tenx[5],
+                        xlabel = "No. Molecules Detected/Cell", ylabel = "No. Genes Detected/Cell")
+      if(plot_mito == TRUE){
+        p1 <- own_feature(plotx, feature1 = "nCount_RNA", feature2 = "Percent_Mito",
+                          title_name = annot_names[j], col = color_conditions$tenx[4],
+                          xlabel = "No. Molecules Detected/Cell", ylabel = "Mitochondria Percent/Cell")
+        p <- p1+p2
+      }else{
+        p <- p2
       }
-    })
-    top1 <- do.call(rbind.data.frame, top1)
 
-    top1_derivedrna <- split(current_data_markers, current_data_markers$cluster)
-    top1_derivedrna <- lapply(top1_derivedrna, function(x){
-      x <- x[order(x[,wt]),]
-      if(nrow(x) > 0){
-        x <- x[1:ifelse(nrow(x)>1, 1, nrow(x)),]
-      }
-    })
+      results[['p9plots']][[j]] <- p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+      names(results[['p9plots']])[j] <- pheno_data[j,"SID"]
 
-    top1_derivedrna <- do.call(rbind.data.frame, top1_derivedrna)
+      n <- 10
+      p1 <- NULL
+      p2 <- NULL
+      p1 <- VariableFeaturePlot(data_current[[j]], cols = color_conditions$bright[1:2])
+      p2 <- LabelPoints(plot = p1, points = VariableFeatures(data_current[[j]])[1:n], repel = TRUE, xnudge = 0, ynudge = 0)
+      results[['p11plots']][[j]] <- p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+      names(results[['p11plots']])[j] <- pheno_data[j,"SID"]
 
+      results[['p12plots']][[j]] <- VizDimLoadings(data_current[[j]], dims = 1:2, reduction = "pca",
+                                                   col = color_conditions$manycolors[1])+
+        plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+      names(results[['p12plots']])[j] <- pheno_data[j,"SID"]
 
-    print(paste("Generating regional statistics for ", pheno_data[i,"FILE"], "..", sep = ""))
-    DefaultAssay(current_seurat) <- "peaks"
-    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RegionStats(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg19)
-    }else if(length(grep("hg38|grch38|38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RegionStats(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg38)
-    }
+      Idents(data_current[[j]]) <- "orig.ident"
+      data_current[[j]] <- RunPCA(data_current[[j]])
+      results[['p13plots']][[j]] <- DimPlot(data_current[[j]], reduction = "pca",cols = color_conditions$tenx) + theme(legend.position = "none")+
+        plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p13plots']])[j] <- pheno_data[j,"SID"]
 
+      results[['p14plots']][[j]] <- DimHeatmap(data_current[[j]], dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE, assays = "RNA")+
+        plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p14plots']])[j] <- pheno_data[j,"SID"]
 
-    print(paste("Linking peaks to genes for ", pheno_data[i,"FILE"], "..", sep = ""))
-    current_seurat <- LinkPeaks(
-      object = current_seurat,
-      peak.assay = "peaks",
-      expression.assay = "ACTIVITY",
-      genes.use = unlist(top1_derivedrna$gene))
+      data_current[[j]] <- FindNeighbors(data_current[[j]], dims = 1:ifelse(ncol(data_current[[j]]) > 30, 30, ncol(data_current[[j]])))
+      data_current[[j]] <- FindClusters(data_current[[j]], resolution = 0.8)
+      data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
 
-    clusters <- sort(as.numeric(as.character(unique(top1$cluster))),decreasing = F)
-    DefaultAssay(current_seurat) <- "peaks"
-    for(k in 1:length(clusters)){
-      if(length(which(unlist(top1$cluster) == clusters[k])) > 0){
-        results[['p10plots']][[length(results[['p10plots']])+1]] <- CoveragePlot(
-          object = current_seurat,
-          region = unlist(top1[which(top1$cluster == clusters[k]),"gene"]),
-          features = unlist(top1_derivedrna[which(top1_derivedrna$cluster == clusters[k]),"gene"]),
-          expression.assay = "ACTIVITY",
-          extend.upstream = 10000,
-          extend.downstream = 10000)+
-          plot_annotation(title = paste("TOP PEAK AND GENE ACTIVITY\n",pheno_data[i,"SID"], ": CLUSTER ", clusters[k], sep = ""),
-                          theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
-        names(results[['p10plots']])[length(results[['p10plots']])] <- paste(pheno_data[i,"SID"],"|","CLUSTER_",clusters[k],sep = "")
-        somePNGPath <- paste(cdir,"10SCA_PLOT_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP1_PEAK_TOP1_GENE_ACTIVITY_IN_CLUSTER_",clusters[k],"_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-        png(somePNGPath, width = 4000, height = 4000*5/6, units = "px", res = 300)
-        print(results[['p10plots']][[length(results[['p10plots']])]])
-        dev.off()
-      }
-    }
+      plotx <- gen10x_plotx(data_current[[j]])
+      plotx$CLUSTER <- Idents(data_current[[j]])
+      plotx$CLUSTER <- factor(plotx$CLUSTER, levels = sort(as.numeric(as.character(unique(plotx$CLUSTER)))))
+      ccolors <- gen_colors(color_conditions$colorful,length(levels(plotx$CLUSTER)))
+      names(ccolors) <- levels(plotx$CLUSTER)
 
-    n <- 6
-    topn_genes <- split(current_data_markers, current_data_markers$cluster)
-    topn_genes <- lapply(topn_genes, function(x){
-      x <- x[order(x[,wt]),]
-      x <- x[1:ifelse(nrow(x)>n, n, nrow(x)),]
-    })
-    topn_genes <- do.call(rbind.data.frame, topn_genes)
-    results[['p11data']][[i]] <- topn_genes
-    names(results[['p11data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p11data']][[i]], paste(cdir, "11SCA_TABLE_TOP_",n,"_GENES_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+      p1 <- NULL
+      p2 <- NULL
+      p1 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CLUSTER", plot_title = "UMAP",point_size = 1,
+                         col = color_conditions$colorful, annot = TRUE, legend_position = "right", numeric = TRUE)
+      p2 <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CLUSTER", plot_title = "tSNE",point_size = 1,
+                         col = color_conditions$colorful, annot = TRUE, legend_position = "right", numeric = TRUE)
 
+      results[['p15plots']][[j]] <- p1+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p15plots']])[j] <- pheno_data[j,"SID"]
 
-    print(paste("Add motif information for ", pheno_data[i,"FILE"], "..", sep = ""))
-    current_assay <- "peaks"
-    used_type <- "ACTIVITY"
-    DefaultAssay(current_seurat) <- "peaks"
-    chosen_genes <- NULL
-    position_freq <- getMatrixSet(x = JASPAR2020, opts = list(species = 9606, all_versions = FALSE))
-    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- AddMotifs(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg19, pfm = position_freq)
-      motif.names <- as.character(unlist(GetAssayData(object = current_seurat[[current_assay]], slot = "motifs")@motif.names))
-      if(length(which(unique(unlist(topn_genes$gene)) %in% motif.names)) > 0){
-        chosen_genes <- unique(unlist(topn_genes$gene))[which(unique(unlist(topn_genes$gene)) %in% motif.names)]
-        chosen_genes <- chosen_genes[1:ifelse(length(chosen_genes) <= n, length(chosen_genes), n)]
-        current_seurat <- Footprint(object = current_seurat, motif.name = chosen_genes,
-                                    genome = BSgenome.Hsapiens.UCSC.hg19)
-      }
-    }else if(length(grep("hg38|grch38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- AddMotifs(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg38, pfm = position_freq)
-      motif.names <- as.character(unlist(GetAssayData(object = current_seurat[[current_assay]], slot = "motifs")@motif.names))
-      if(length(which(unique(unlist(topn_genes$gene)) %in% motif.names)) > 0){
-        chosen_genes <- unique(unlist(topn_genes$gene))[which(unique(unlist(topn_genes$gene)) %in% motif.names)]
-        chosen_genes <- chosen_genes[1:ifelse(length(chosen_genes) <= n, length(chosen_genes), n)]
-        current_seurat <- Footprint(object = current_seurat, motif.name = chosen_genes,
-                                    genome = BSgenome.Hsapiens.UCSC.hg38)
-      }
-    }
+      results[['p16plots']][[j]] <- p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p16plots']])[j] <- pheno_data[j,"SID"]
 
-    p <- NULL
-    p <- PlotFootprint(current_seurat, features = chosen_genes, group.by	= "seurat_clusters")
-    p <- p + plot_layout(ncol = 2)+
-      plot_annotation(title = paste(pheno_data[i,"SID"], ": TOP ",used_type," GENES \n(Top group with highest accessibility in motif flanking region are labeled)", sep = ""),
-                      theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
-    results[['p12plots']][[i]] <- p
-    names(results[['p12plots']])[i] <- pheno_data[i,"SID"]
+      current_clusters <- sort(as.numeric(as.character(unique(plotx$CLUSTER))))
+      Idents(data_current[[j]]) <- "seurat_clusters"
+      current_out <- NULL
+      current_out <- deanalysis(data_current[[j]], current_clusters, plot_title = annot_names[j],group=NULL,de_analysis = "findallmarkers")
+      current_data_markers <- NULL
+      results[['p17data']][[j]] <- current_out$current_data_markers
+      names(results[['p17data']])[j] <- pheno_data[j,"SID"]
+      de_type <- current_out$de_type
+      de_name <- current_out$de_name
+      top1 <- current_out$top1
+      topn <- current_out$topn
+      current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
+      ######################### MEDIAN EXPRESSIONS #####################################
+      current <- group_medianexpr(current_out$current_data_markers, data = data_current[[j]], group = "seurat_clusters", cell_type = F)
+      plot_median <- current$plot_median
+      top_markers <- current$top_markers
 
-    somePNGPath <- paste(cdir,"12SCA_PLOT_",toupper(current_assay),"_TOP_",used_type,"_GENES_FOOTPRINTING_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = 4000, units = "px", res = 250)
-    print(results[['p12plots']][[i]])
-    dev.off()
+      results[['p18plots']][[j]] <- complex_heatmap(plot_median, col = color_conditions$BlueYellowRed)
+      names(results[['p18plots']])[j] <- pheno_data[j,"SID"]
 
-    p_thresh <- 0.05
-    DefaultAssay(current_seurat) <- "peaks"
+      #################################### TOP MARKERS + TSNE / UMAP ###################################################################
+      wt <- colnames(current_out$current_data_markers)[grep("log.*FC", colnames(current_out$current_data_markers), ignore.case = T)]
+      current_clusters <- sort(as.numeric(as.character(unique(top_markers$cluster))), decreasing = F)
+      logFC_list <- NULL
+      p1 <- NULL
+      P2 <- NULL
+      P3 <- NULL
+      p1 <- ggplot(data=data.frame(top_markers), aes(x=gene, y=data.frame(top_markers)[,wt], fill=cluster)) +
+        geom_bar(stat="identity", position=position_dodge())+
+        scale_fill_manual(values = ccolors)+
+        theme_classic() +
+        coord_flip()+
+        ylab(wt)+
+        facet_wrap(~cluster, scales = "free_y") +
+        theme(axis.text.y=element_text(size = 10),
+              strip.text.x = element_text(size = 15, face = "bold"),
+              legend.title = element_text(size =20, face = "bold"),
+              legend.text = element_text(size = 15))
 
-    enriched.motifs <- FindMotifs(object = current_seurat,features = da_peaks[which(da_peaks$p_val_adj < p_thresh),"gene"])
-    results[['p13data']][[i]] <- enriched.motifs
-    names(results[['p13data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p13data']][[i]], paste(cdir, "13SCA_TABLE_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+      plotx <- gen10x_plotx(data_current[[j]], groups = NULL)
+      plotx$CLUSTER <- data_current[[j]]$seurat_clusters
 
-    n <- 10
-    results[['p14plots']][[i]] <- MotifPlot(object = current_seurat, motifs = rownames(enriched.motifs)[1:n])+
-      plot_annotation(title = paste(pheno_data[i,"SID"], "\nPOSITION WEIGHT MATRICES OF TOP ENRICHED MOTIFS", sep = ""),
-                      theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
-    results[['p14plots']][[i]] <- adjust_theme(results[['p14plots']][[i]], xsize = 12, title_size = 20, strip_size = 15)
-    names(results[['p14plots']])[i] <- pheno_data[i,"SID"]
+      p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CLUSTER",
+                         plot_title = annot_names[j],col = ccolors,numeric = T,
+                         annot = T, legend_position = "right", point_size = 1)
+      p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CLUSTER",
+                         plot_title = annot_names[j],col = ccolors,numeric = T,
+                         annot = T, legend_position = "right", point_size = 1)
 
-    somePNGPath <- paste(cdir,"14SCA_PLOT_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = 2800, units = "px", res = 300)
-    print(results[['p14plots']][[i]])
-    dev.off()
+      results[['p19plots']][[j]] <- p1
+      names(results[['p19plots']])[j] <- pheno_data[j,"SID"]
+      results[['p192plots']][[j]] <- p2
+      names(results[['p192plots']])[j] <- pheno_data[j,"SID"]
+      results[['p193plots']][[j]] <- p3
+      names(results[['p193plots']])[j] <- pheno_data[j,"SID"]
 
+      # grid.arrange(p1, p2, ncol = 2)
+      # grid.arrange(p1, p3, ncol = 2)
 
-    print(paste("Computing peak set variability for ", pheno_data[i,"FILE"], "..", sep = ""))
-    # Per-cell motif activity score
-    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RunChromVAR(object = current_seurat,genome = BSgenome.Hsapiens.UCSC.hg19)
-    }else if(length(grep("hg38|grch38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RunChromVAR(object = current_seurat,genome = BSgenome.Hsapiens.UCSC.hg38)
-    }
+      top_1_markers <- current_out$current_data_markers %>% group_by(cluster) %>% top_n(n = 1, eval(parse(text = wt)))
+      results[['p20plots']][[j]] <- RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 4,
+                                              cols = ccolors)+
+        plot_annotation(title = paste("TOP1: ", annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p20plots']])[j] <- pheno_data[j,"SID"]
 
-    n <- 6
-    DefaultAssay(current_seurat) <- 'chromvar'
-    p <- NULL
-    p <- FeaturePlot(
-      object = current_seurat,
-      features = enriched.motifs$motif[1:n],
-      min.cutoff = 'q10',
-      max.cutoff = 'q90',
-      pt.size = 0.1, label = T,
-      cols = c("green", "blue")) +
-      plot_annotation(title = "Motif Activities",
-                      theme = theme(plot.title = element_text(size = 10, hjust = 0.5, face = "bold")))
+      results[['p21plots']][[j]] <- current_out$featureplot +plot_layout(ncol = 4) +
+        plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      names(results[['p21plots']])[j] <- pheno_data[j,"SID"]
 
-    results[['p15plots']][[i]] <- results[['p5plots']][[i]] + p +
-      plot_annotation(title = paste(pheno_data[i,"SID"], "\nPeaks VS Top Enriched Motifs", sep = ""),
-                      theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
-    names(results[['p15plots']])[i] <- pheno_data[i,"SID"]
-
-    somePNGPath <- paste(cdir,"15SCA_PLOT_UMAP_VS_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = 2000, units = "px", res = 200)
-    print(results[['p15plots']][[i]])
-    dev.off()
-
-    DefaultAssay(current_seurat) <- "peaks"
-    n <- 1000
-    topn <- split(da_peaks, da_peaks$cluster)
-    topn <- lapply(topn, function(x){
-      x <- x[order(x[,wt]),]
-      x <- x[1:ifelse(nrow(x)>n, n, nrow(x)),]
-    })
-    topn <- do.call(rbind.data.frame, topn)
-    n <- 5000
-    topn <- unique(unlist(topn$gene)[1:ifelse(nrow(topn) < n, nrow(topn), n)])
-    # current_seurat <- subset(current_seurat, features = topn)
-    results[['data']][[i]] <- current_seurat
-    names(results[['data']])[i] <- pheno_data[i,"SID"]
-    rm(current_seurat)
-    rm(closest_genes)
-    rm(position_freq)
-    # rm(top_FC)
-    # rm(top.da.peak)
-
-  }
-
-  data_ref <- unique(toupper(pheno_data[,"REF_GENOME"]))
-  if((length(results[['data']]) > 1) & (length(data_ref) == 1)){
-    print(paste("Merging samples..", sep = ""))
-    combined_peaks <- NULL
-    for(i in 1:(length(results[['data']]) - 1)){
-      combined_peaks <- reduce(x = c(results[['data']][[i]]@assays$peaks@ranges, results[['data']][[i+1]]@assays$peaks@ranges))
-    }
-
-    peakwidths <- width(combined_peaks)
-    combined_peaks <- combined_peaks[peakwidths  < 10000 & peakwidths > 20]
-
-    for(i in 1:length(results[['data']])){
-
-      current <- FeatureMatrix(
-        fragments = results[['data']][[i]]@assays$peaks@fragments,
-        features = combined_peaks,
-        cells = colnames(results[['data']][[i]]))
-
-      current <- CreateChromatinAssay(current, fragments = results[['data']][[i]]@assays$peaks@fragments)
-      results[['data']][[i]] <- CreateSeuratObject(current, assay = "peaks")
-      results[['data']][[i]]$Sample <- sample_names[i]
-
-    }
-
-    rm(current)
-
-    data <- merge(x = results[['data']][[1]], y = results[['data']][2:length(results[['data']])],
-                  add.cell.ids = sample_names)
-
-    print(paste("Running dimension reduction and clustering for merged samples..", sep = ""))
-
-    n <- ifelse((length(data@assays$peaks@var.features)-1) < 50, (length(data@assays$peaks@var.features) - 1), 50)
-    data <- RunTFIDF(data)
-    data <- FindTopFeatures(data, min.cutoff = 20)
-    data <- RunSVD(data) # , n = n
-    data <- RunUMAP(data, reduction = 'lsi', dims = 2:n)
-    # data <- RunTSNE(data, reduction = 'lsi', check_duplicates = FALSE) # dims = 2:n,
-    data <- FindNeighbors(data, reduction = 'lsi') # dims = 2:n,
-    data <- FindClusters(data, resolution = 0.8, n.iter = 1000)
-
-    print(paste("Finding top peaks for merged samples..", sep = ""))
-    data_markers <- FindAllMarkers(data, min.pct = 0.25, logfc.threshold = 0.25)
-
-    p_thresh <- 0.05
-    data_markers <- data_markers[data_markers$p_val_adj < p_thresh,]
-    data_markers <- data_markers[order(data_markers$p_val_adj, decreasing = F),]
-    results[['data_markers']] <- data_markers
-    write.csv(results[['data_markers']], paste(cdir, "16SCA_TABLE_TOP_PEAKS_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
-
-    plotx <- data.frame(UMAP_1 = data@reductions$umap@cell.embeddings[,"UMAP_1"],
-                        UMAP_2 = data@reductions$umap@cell.embeddings[,"UMAP_2"],
-                        Sample = data$Sample, CLUSTER = data$seurat_clusters)
-    plotx$Sample <- factor(plotx$Sample)
-    plotx$CLUSTER <- factor(plotx$CLUSTER, levels = sort(unique(as.numeric(as.character(plotx$CLUSTER)))))
-
-    cluster_colors <- gen_colors(color_conditions$tenx, length(unique(plotx$CLUSTER)))
-    names(cluster_colors) <- sort(unique(plotx$CLUSTER), decreasing = F)
-
-    p1_umap <- NULL
-    p1_umap <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "Sample", plot_title = "All Samples Integrated scRNASEQ UMAP\nBy Samples", col = sample_colors, annot = TRUE, legend_position = "right", point_size = 1, numeric = F)
-
-    p2_umap <- NULL
-    p2_umap <- plot_bygroup(plotx, "UMAP_1", "UMAP_2", group = "CLUSTER", plot_title = "All Samples Integrated scRNASEQ UMAP\nBy Clusters", col = cluster_colors, annot = TRUE, legend_position = "right", point_size = 1, numeric = T)
-
-    results[['p16plots']] <- p1_umap+p2_umap
-
-    somePNGPath <- paste(cdir,"16SCA_PLOT_UMAP_INTEGRATED_ATAC_SAMPLES_AUTOCLUST_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = 1800, units = "px", res = 200)
-    print(results[['p16plots']])
-    dev.off()
-
-    wt <- colnames(results[['data_markers']])[grep("log.*FC", colnames(results[['data_markers']]), ignore.case = T)]
-    top1 <- results[['data_markers']] %>% group_by(cluster) %>% top_n(n = 1, wt = eval(parse(text = wt)))
-    top1 <- top1[order(top1$cluster, decreasing = F),]
-
-    plots <- NULL
-    for(k in 1:length(top1$gene)){
-
-      plots[[k]] <- FeaturePlot(data, features = top1$gene[k], cols = c("green", "blue"),
-                                label = T, pt.size = 0.1, max.cutoff = 'q95')+
-        ggtitle(paste("CLUSTER: ", top1$cluster[k], "\n",top1$gene[k],sep = ""))
-    }
-
-    results[['p17plots']] <- plots
-    somePNGPath <- paste(cdir,"17SCA_PLOT_INTEGRATED_ATAC_SAMPLES_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height = ceiling(length(top1$gene)/4)*1000, units = "px", res = 300)
-    print(do.call("grid.arrange", c(results[['p17plots']], ncol=4)))
-    dev.off()
-
-    n <- 10
-    wt <- colnames(results[['data_markers']])[grep("log.*FC", colnames(results[['data_markers']]), ignore.case = T)]
-    top_n <- results[['data_markers']] %>% group_by(cluster) %>% top_n(n = n, wt = eval(parse(text = wt)))
-    current_clusters <- as.numeric(as.character(sort(unique(results[['data_markers']]$cluster))))
-    for(k in 1:length(current_clusters)){
-      if(length(which(unlist(top_n$cluster) == current_clusters[k])) > 0){
-        current <- top_n[which(top_n$cluster == current_clusters[k]),]
+      for(k in 1:length(current_clusters)){
+        current <- topn[which(topn$cluster == current_clusters[k]),]
         current <- current[order(current$p_val_adj, decreasing = F),]
-        results[['p18plots']][[length(results[['p18plots']])+1]] <- VlnPlot(data, features = current$gene, pt.size = 0,
-                                                                            # log = TRUE,
-                                                                            cols = gen_colors(color_conditions$tenx,length(unique(current_clusters)))) +
-          plot_annotation(title = paste("INTEGRATED DATA: CLUSTER ", current_clusters[k], sep = ""),
-                          theme = theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold")))
-        names(results[['p18plots']])[length(results[['p18plots']])] <- paste("CLUSTER_",current_clusters[k], sep = "")
-        somePNGPath <- paste(cdir,"18SCA_PLOT_INTEGRATED_ATAC_SAMPLES_TOP_",n,"_MARKERS_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
-        png(somePNGPath, width = 4000, height = ceiling(length(current_clusters)/4)*800, units = "px", res = 300)
-        print(results[['p18plots']][[length(results[['p18plots']])]])
-        dev.off()
+        results[['p22plots']][[length(results[['p22plots']])+1]] <- VlnPlot(data_current[[j]], features = current$gene, pt.size = 0,
+                                                                            ncol = 4, cols = ccolors)&
+          xlab("CLUSTERS")&
+          plot_annotation(title = paste("TOP",n," IN CLUSTER ", current_clusters[k],": ",current_out$de_name, annot_names[j],  sep = ""),
+                          theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
+        names(results[['p22plots']])[length(results[['p22plots']])] <- paste("CLUSTER_",current_clusters[k],"|",pheno_data[j,"SID"], sep = "")
       }
-    }
 
-    if(length(grep("hg19",data_ref, ignore.case = T)) > 0){
-      ref_genome <- "hg19"
-      load("DB/hg19_EnsDb.Hsapiens.v75.RData")
-      seqlevelsStyle(ref_annot) <- "UCSC"
-      genome(ref_annot) <- "hg19"
-    }else if(length(grep("hg38|grch38",data_ref, ignore.case = T)) > 0){
-      ref_genome <- "GRCh38.p12"
-      load("DB/hg38_EnsDb.Hsapiens.v86.RData")
-      seqlevelsStyle(ref_annot) <- "UCSC"
-      genome(ref_annot) <- "GRCh38.p12"
-    }
+      results[['p23plots']][[j]] <- DoHeatmap(data_current[[j]], features = topn$gene,
+                                              group.colors = ccolors, size = 8) +
+        ggtitle(annot_names[j])+
+        NoLegend()+theme(axis.text.x = element_blank(),
+                         axis.text.y = element_text(size = 10),
+                         axis.title.x = element_blank(),
+                         axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                         legend.title = element_blank(),
+                         legend.text = element_text(size = 15),
+                         plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
+      names(results[['p23plots']])[j] <- pheno_data[j,"SID"]
 
-    Annotation(data) <- ref_annot
-    rm(ref_annot)
+      Idents(data_current[[j]]) <- "seurat_clusters"
+      DefaultAssay(data_current[[j]]) <- "RNA"
 
-    print(paste("Calculating gene activities for merged samples..", sep = ""))
-    gene_activities <- GeneActivity(data)
-    data[['ACTIVITY']] <- CreateAssayObject(counts = gene_activities)
-    rm(gene_activities)
+      orig_gene_names <- NULL
+      scale_orig_gene_names <- NULL
+      if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+        orig_gene_names <- row.names(data_current)[j]
+        scale_orig_gene_names <- row.names(data_current[[j]]@assays$RNA@scale.data)
+        row.names(data_current[[j]]@assays$RNA@counts) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@counts), ignore.case = T)
+        row.names(data_current[[j]]@assays$RNA@data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@data), ignore.case = T)
+        row.names(data_current[[j]]@assays$RNA@scale.data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data_current[[j]]@assays$RNA@scale.data), ignore.case = T)
+      }
 
-    DefaultAssay(data) <- "ACTIVITY"
+      clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data_current[[j]])),
+                         clusters =data_current[[j]]$seurat_clusters,
+                         ref = hpca.se, assay.type.test=1,
+                         labels = hpca.se$label.main)
+      data_current[[j]]$CELL_TYPE <- clu_ann$labels[match(data_current[[j]]$seurat_clusters,row.names(clu_ann))]
+      data_current[[j]]@meta.data[which(is.na(data_current[[j]]$CELL_TYPE)),"CELL_TYPE"] <- "Unidentifiable"
+      if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
+        row.names(data_current[[j]]@assays$RNA@counts) <- orig_gene_names
+        row.names(data_current[[j]]@assays$RNA@data) <- orig_gene_names
+        row.names(data_current[[j]]@assays$RNA@scale.data) <- scale_orig_gene_names
+      }
 
-    print(paste("Finding top genes for merged samples..", sep = ""))
-    data_activity_markers <- FindAllMarkers(data, min.pct = 0.25, logfc.threshold = 0.25)
-    p_thresh <- 0.05
-    data_activity_markers <- data_activity_markers[data_activity_markers$p_val_adj < p_thresh,]
-    data_activity_markers <- data_activity_markers[order(data_activity_markers$p_val_adj, decreasing = F),]
-    results[['data_activity_markers']] <- data_activity_markers
-    write.csv(results[['data_activity_markers']], paste(cdir, "18SCA_TABLE_TOP_GENES_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
+      Idents(data_current[[j]]) <- data_current[[j]]$CELL_TYPE
+      plotx <- gen10x_plotx(data_current[[j]])
+      plotx$CELL_TYPE <- data_current[[j]]$CELL_TYPE
 
-    wt <- colnames(data_activity_markers)[grep("log.*FC", colnames(data_activity_markers), ignore.case = T)]
-    top1_activities <- data_activity_markers %>% group_by(cluster) %>% top_n(n = 1, wt = eval(parse(text = wt)))
-    top1_activities <- top1_activities[order(top1_activities$cluster, decreasing = F),]
+      cct_colors <- gen_colors(color_conditions$tenx,length(unique(plotx$CELL_TYPE)))
+      names(cct_colors) <- sort(unique(plotx$CELL_TYPE))
 
-    top1 <- data_activity_markers %>% group_by(cluster) %>% dplyr::filter((eval(parse(text = wt)) > log2(1.5))) %>% dplyr::slice(1:1) # %>% filter(avg_log2FC > 1)
-    top1 <- top1[order(top1$cluster, decreasing = F),]
+      results[['p24plots']][[j]] <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = annot_names[j],
+                                                 col = cct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+      names(results[['p24plots']])[j] <- pheno_data[j,"SID"]
 
-    clusters <- unique(sort(as.numeric(as.character(top1$cluster))))
+      results[['p25plots']][[j]] <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CELL_TYPE", plot_title = annot_names[j],
+                                                 col = cct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+      names(results[['p25plots']])[j] <- pheno_data[j,"SID"]
 
-    DefaultAssay(data) <- "peaks"
-    for(k in 1:length(clusters)){
-      if(length(which(unlist(top1$cluster) == clusters[k])) > 0){
-        results[['p19plots']][[length(results[['p19plots']])+1]] <- CoveragePlot(
-          object = data,
-          expression.assay = "ACTIVITY",
-          region = unlist(top1[which(top1$cluster == clusters[k]),"gene"]),
-          features = unlist(top1_activities[which(top1_activities$cluster == clusters[k]),"gene"]),
-          extend.upstream = 10000,
-          extend.downstream = 10000)+
-          # scale_color_manual(values = gen_colors(color_conditions$tenx, length(unique(data$Sample))))+
-          plot_annotation(title = paste("INTEGRATED DATA: CLUSTER ", clusters[k], sep = ""),
-                          theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
-        names(results[['p19plots']])[length(results[['p19plots']])] <- paste("CLUSTER_",clusters[k], sep = "")
-        somePNGPath <- paste(cdir,"19SCA_PLOT_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP_PEAK_GENE_ACTIVITY_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
-        png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
-        print(results[['p19plots']][[length(results[['p19plots']])]])
-        dev.off()
+      ################ Pathway Analysis #########################################################################
+      n <- 500
+      filtered_markers <- current_out$current_data_markers[grep("AC[0-9]+\\.[0-9]+|AL[0-9]+\\.[0-9]+",current_out$current_data_markers$gene, ignore.case = T, invert = T),]
+      topn <- filtered_markers %>% group_by(cluster) %>% top_n(n = n, wt = wt)
+
+      if(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2){
+        topn$ENSEMBL_ID <- gsub("(ENS.*?[0-9]+)[-|_|\\s+|\\.].*","\\1",topn$gene)
+        mapped_id <- select(hs, keys = topn$ENSEMBL_ID, columns = c("ENTREZID", "SYMBOL"), keytype = "ENSEMBL")
+        topn$ENTREZ_ID <- mapped_id[match(topn$ENSEMBL_ID, mapped_id$ENSEMBL),"ENTREZID"]
+      }else{
+        mapped_id <- select(hs, keys = topn$gene, columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
+        topn$ENTREZ_ID <- mapped_id[match(topn$gene, mapped_id$SYMBOL),"ENTREZID"]
+      }
+
+      if(length(which(is.na(topn$ENTREZ_ID))) > 0 & !(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2)){
+        current <- topn[which(is.na(topn$ENTREZ_ID)),]
+        current$alternate_gene <- hgnc.table[match(current$gene, hgnc.table$Symbol),"Approved.Symbol"]
+        current_id <- select(hs, keys = current$alternate_gene[!is.na(current$alternate_gene)], columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
+        current$ENTREZ_ID <- current_id[match(current$alternate_gene, current_id$SYMBOL),"ENTREZID"]
+        topn[which(is.na(topn$ENTREZ_ID)),"ENTREZ_ID"] <- current[match(as.character(unlist(topn[which(is.na(topn$ENTREZ_ID)),"gene"])), current$gene),"ENTREZ_ID"]
+      }
+      topn <- topn[!is.na(topn$ENTREZ_ID),]
+
+      p_threshold <- 0.01
+      current <- split(topn, topn$cluster)
+      pathway_EA_result <- NULL
+      pathway_EA_result <- lapply(current, function(x){
+        x <- enrichDGN(gene=unique(as.numeric(as.character(x$ENTREZ_ID))),pvalueCutoff=0.05, qvalueCutoff = 0.05,readable=T)
+      })
+
+      for(i in 1:length(pathway_EA_result)){
+        if(!is.null(pathway_EA_result[[i]])){
+          pathway_EA_result[[i]]@result <- pathway_EA_result[[i]]@result[which(pathway_EA_result[[i]]@result$p.adjust < p_threshold),]
+        }
+      }
+
+      results[['pathway_EA_result']][[j]] <- pathway_EA_result
+      names(results[['pathway_EA_result']])[j] <- pheno_data[j,"SID"]
+
+      summary_pathways <- NULL
+      n <- 15
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            summary_pathways <- rbind(summary_pathways, data.frame(CLUSTER = names(pathway_EA_result)[i],current))
+            results[['p26plots']][[length(results[['p26plots']])+1]] <- barplot(current, showCategory=n, orderBy = "x")+
+              ggtitle(paste(annot_names[j],"\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = ""))
+            names(results[['p26plots']])[length(results[['p26plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      results[['p27data']][[j]] <- summary_pathways
+      names(results[['p27data']])[j] <- pheno_data[j,"SID"]
+
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            results[['p28plots']][[length(results[['p28plots']])+1]] <- dotplot(current, showCategory=n, orderBy = "x")+ggtitle(paste(annot_names[j], "\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = ""))
+            names(results[['p28plots']])[length(results[['p28plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      n <- 200
+      topn_cluster <- split(topn, topn$cluster)
+      p1 <- NULL
+      p2 <- NULL
+      p3 <- NULL
+
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            current_gene <- topn_cluster[[i]]
+            if(toupper(wt) == toupper("avg_log2FC")){
+              gene_list <- current_gene$avg_log2FC
+            }else{
+              gene_list <- current_gene$avg_logFC
+            }
+            names(gene_list) <- current_gene$ENTREZ_ID
+            gene_list <- sort(gene_list, decreasing = TRUE)
+            gene_list <- gene_list[!duplicated(names(gene_list))]
+
+            p1[[i]] <- cnetplot(current, foldChange=gene_list) +
+              ggtitle(paste(annot_names[j], "\nA: Gene-Concept Network, ",wt,": Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+            p2[[i]] <- cnetplot(current, categorySize="pvalue", foldChange=gene_list) +
+              ggtitle(paste(annot_names[j], "\nB: Gene-Concept Network, ",wt," & P-Value: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+            p3[[i]] <- cnetplot(current, foldChange=gene_list, circular = TRUE, colorEdge = TRUE) +
+              ggtitle(paste(annot_names[j], "\nC: Gene-Concept Network, ",wt,": Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+
+            results[['p29plots']][[length(results[['p29plots']])+1]] <- cowplot::plot_grid(p1[[i]], p2[[i]], p3[[i]], ncol=3, rel_widths=c(1.2, 1.2, 1.2))
+            names(results[['p29plots']])[length(results[['p29plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      p1 <- NULL
+      p2 <- NULL
+
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            p1[[i]] <- cnetplot(current, node_label="category") +
+              ggtitle(paste(annot_names[j], "\nA: Network Terms: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+            p2[[i]] <- cnetplot(current, node_label="gene") +
+              ggtitle(paste(annot_names[j], "\nA: Network Genes: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+
+            results[['p30plots']][[length(results[['p30plots']])+1]] <- cowplot::plot_grid(p1[[i]], p2[[i]], ncol=2, rel_widths=c(1.2, 1.2, 1.2))
+            names(results[['p30plots']])[length(results[['p30plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            current_gene <- topn_cluster[[i]]
+            if(toupper(wt) == toupper("avg_log2FC")){
+              gene_list <- current_gene$avg_log2FC
+            }else{
+              gene_list <- current_gene$avg_logFC
+            }
+            names(gene_list) <- current_gene$ENTREZ_ID
+            gene_list <- sort(gene_list, decreasing = TRUE)
+            gene_list <- gene_list[!duplicated(names(gene_list))]
+            # currentR <- setReadable(current, 'org.Hs.eg.db', 'ENTREZID')
+            results[['p31plots']][[length(results[['p31plots']])+1]] <- heatplot(current, foldChange = gene_list) +
+              ggtitle(paste(annot_names[j], "\nHeatmap of Enrichment Terms: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"))
+            names(results[['p31plots']])[length(results[['p31plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      for(i in 1:length(pathway_EA_result)){
+        current <- pathway_EA_result[[i]]
+        if(!is.null(current)){
+          if(nrow(current@result) > 0){
+            currentR <- pairwise_termsim(current)
+            if(nrow(currentR@result) > 10){
+              results[['p32plots']][[length(results[['p32plots']])+1]] <- emapplot(currentR, cex_line = 0.1) +
+                ggtitle(paste(annot_names[j], "\nEnrichment Map: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+                scale_colour_gradient_tableau(palette = "Red-Gold") +
+                theme(plot.title = element_text(face = "bold"))
+              names(results[['p32plots']])[length(results[['p32plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            }
+          }
+        }
+      }
+
+      current <- NULL
+      for(i in 1:length(topn_cluster)){
+        if(!is.null(topn_cluster[[i]])){
+          current[[i]] <- topn_cluster[[i]]$ENTREZ_ID
+        }
+      }
+
+      names(current) <- names(topn_cluster)
+      topn_cluster <- topn_cluster[!unlist(lapply(topn_cluster,is.null))]
+      current <- current[!unlist(lapply(current,is.null))]
+      plotx <- compareCluster(current, fun="enrichKEGG", organism="hsa", pvalueCutoff=0.05)
+      currentR <- pairwise_termsim(plotx)
+
+      results[['p33plots']][[j]] <- emapplot(currentR, cex_line = 0.1, pie="count", pie_scale=1.5, layout="kk") +
+        ggtitle(paste(annot_names[j], "\nEnrichment Map with Proportions", sep = "")) +
+        scale_fill_tableau(palette = "Tableau 20") +
+        theme(plot.title = element_text(face = "bold"))
+      names(results[['p33plots']])[j] <- pheno_data[j,"SID"]
+
+      for(i in 1:length(pathway_EA_result)){
+        if(!is.null(pathway_EA_result[[i]])){
+          if(nrow(pathway_EA_result[[i]]@result) > 0){
+            results[['p34plots']][[length(results[['p34plots']])+1]] <- upsetplot(pathway_EA_result[[i]]) +
+              ggtitle(paste(annot_names[j], "\nUpset Plot: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
+            names(results[['p34plots']])[length(results[['p34plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+          }
+        }
+      }
+
+      GSEA_result <- NULL
+      for(i in 1:length(topn_cluster)){
+        if(toupper(wt) == toupper("avg_logFC")){
+          gene_list <- topn_cluster[[i]]$avg_logFC
+        }else{
+          gene_list <- topn_cluster[[i]]$avg_log2FC
+        }
+        if(nrow(topn_cluster[[i]])>10){
+          names(gene_list) <- topn_cluster[[i]]$ENTREZ_ID
+          gene_list <- sort(gene_list, decreasing = TRUE)
+          gene_list <- gene_list[!duplicated(names(gene_list))]
+          GSEA_result[[i]] <- gseNCG(gene=gene_list, pvalueCutoff = p_threshold)
+        }else{
+          GSEA_result[[i]] <- NULL
+        }
+      }
+
+      if_plot <- NULL
+
+      for(i in 1:length(GSEA_result)){
+        if(!is.null(GSEA_result[[i]])){
+          if(nrow(GSEA_result[[i]]@result) > 0){
+            GSEA_result[[i]]@result <- GSEA_result[[i]]@result[GSEA_result[[i]]@result$p.adjust < p_threshold,]
+            if_plot[[i]] <- ifelse(nrow(GSEA_result[[i]]@result) ==0, FALSE, TRUE)
+          }else{
+            if_plot[[i]] <- FALSE
+          }
+        }else{
+          if_plot[[i]] <- FALSE
+        }
+      }
+
+      if(!all(if_plot == FALSE)){
+
+        for(i in 1:length(GSEA_result)){
+          current <- GSEA_result[[i]]
+          if(!is.null(current)){
+            if(nrow(current@result[which(current@result$ID != "-"),]) > 0){
+              results[['p35plots']][[length(results[['p35plots']])+1]] <- gseaplot2(current, geneSetID = which(current@result$ID != "-"), title = current$Description[which(current$Description != "-")], pvalue_table = TRUE,
+                                                                                    ES_geom = "line")+
+                ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+                theme(plot.title = element_text(face = "bold"))
+              names(results[['p35plots']])[length(results[['p35plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            }
+          }
+        }
+      }
+
+      ##################### CELL TYPES ##########################################################################
+
+      if(length(unique(data_current[[j]]$CELL_TYPE)) > 1){
+        current <- group_medianexpr(current_out$current_data_markers, data = data_current[[j]], group = "CELL_TYPE", cell_type = T)
+        plot_median_cell_type <- current$plot_median
+        top_markers_cell_type <- current$top_markers
+        n <- length(unique(top_markers_cell_type$gene))
+
+        results[['p36plots']][[j]] <- complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed)
+        names(results[['p36plots']])[j] <- pheno_data[j,"SID"]
+
+        cell_types <- sort(as.character(unique(top_markers_cell_type$CELL_TYPE)))
+        colors <- gen_colors(color_conditions$colorful,length(cell_types))
+
+        p1 <- NULL
+        p2 <- NULL
+        p3 <- NULL
+        p1 <- ggplot(data=data.frame(top_markers_cell_type), aes(x=gene, y=data.frame(top_markers_cell_type)[,wt], fill=CELL_TYPE)) +
+          geom_bar(stat="identity", position=position_dodge())+
+          scale_fill_manual(values = as.character(colors))+
+          theme_classic() +
+          coord_flip()+
+          ylab(wt)+
+          facet_wrap(~CELL_TYPE, scales = "free_y") +
+          theme(axis.text.y=element_text(size = 10),
+                strip.text.x = element_text(size = 15, face = "bold"),
+                legend.title = element_text(size =20, face = "bold"),
+                legend.text = element_text(size = 15))
+
+        plotx <- gen10x_plotx(data_current[[j]], groups = NULL)
+        plotx$CELL_TYPE <- data_current[[j]]$CELL_TYPE
+
+        p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CELL_TYPE",
+                           plot_title = annot_names[j],col = cct_colors,numeric = F,
+                           annot = T, legend_position = "right", point_size = 1)
+        p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CELL_TYPE",
+                           plot_title = annot_names[j],col = cct_colors,numeric = F,
+                           annot = T, legend_position = "right", point_size = 1)
+
+        results[['p37plots']][[j]] <- p1
+        names(results[['p37plots']])[j] <- pheno_data[j,"SID"]
+        results[['p372plots']][[j]] <- p2
+        names(results[['p372plots']])[j] <- pheno_data[j,"SID"]
+        results[['p373plots']][[j]] <- p3
+        names(results[['p373plots']])[j] <- pheno_data[j,"SID"]
+
+        # grid.arrange(p1, p2, ncol = 2)
+        # grid.arrange(p1, p3, ncol = 2)
+
+        current_out$current_data_markers$CELL_TYPE <- data_current[[j]]@meta.data[match(current_out$current_data_markers$cluster, data_current[[j]]$seurat_clusters),"CELL_TYPE"]
+        top_1_markers <- current_out$current_data_markers %>% group_by(CELL_TYPE) %>% top_n(n = 1, eval(parse(text = wt)))
+        Idents(data_current[[j]]) <- "CELL_TYPE"
+        results[['p38plots']][[j]] <- RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 2,
+                                                cols = cct_colors)+
+          plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+        names(results[['p38plots']])[j] <- pheno_data[j,"SID"]
+
+        Idents(data_current[[j]]) <- "orig.ident"
+        DefaultAssay(data_current[[j]]) <- 'RNA'
+        rm(p)
       }
     }
   }
+  ########## Integration Steps #####################################################################
+  if(nrow(pheno_data) == 1){
+
+    data <- data_current[[1]]
+    DefaultAssay(data) <- "RNA"
+    n <- 10
+    top_features <- data.frame(TOP_PCA_POS_NEG_GENES = paste(capture.output(print(data[["pca"]], dims = 1:5, nfeatures = n))))
+
+  }else{
+    data_current <- lapply(data_current, function(x){
+      # x <- ScaleData(x, verbose=F, features = data_features, vars.to.regress = c("nCount_RNA", "Percent_Mito"))
+      # x <- RunPCA(x, npcs = 30, verbose = FALSE, features = data_features)
+      x <- NormalizeData(x)
+      x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+      # x <- RunPCA(x, npcs = 30, verbose = FALSE, features = VariableFeatures(x))
+    })
+    integrative_features <- SelectIntegrationFeatures(object.list = data_current)
+    data_anchors <- FindIntegrationAnchors(object.list = data_current,
+                                           reduction = "rpca", anchor.features = integrative_features)
+    data <- IntegrateData(anchorset = data_anchors)
+    rm(data_anchors)
+    DefaultAssay(data) <- "integrated"
+    data <- ScaleData(data, verbose = FALSE)
+
+    DefaultAssay(data) <- "RNA"
+    data <- FindVariableFeatures(data, selection.method = "vst", nfeatures = 2000)
+    data <- ScaleData(data, verbose = FALSE)
+    data <- RunPCA(data, verbose = FALSE)
+    data <- RunUMAP(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+    data <- RunTSNE(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+    data_dim <- data.frame(gen10x_plotx(data), DATA_TYPE = "BEFORE_INTEGRATION", SAMPLE_ID = data$orig.ident)
+
+    if((toupper(integration_method) == "SEURAT") | (toupper(integration_method) == "NULL")){
+      # integration_method <- "SEURAT"
+      integration_name <- "SEURAT_INTEGRATED"
+      DefaultAssay(data) <- "integrated"
+      reduction_method <- "pca"
+
+      data <- RunPCA(data, verbose = FALSE)
+      data <- RunUMAP(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+      data <- RunTSNE(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+      current <- cbind(data.frame(gen10x_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
+    }else if(toupper(integration_method) == "HARMONY"){
+      integration_name <- "HARMONY_INTEGRATED"
+      DefaultAssay(data) <- "RNA"
+      reduction_method <- "harmony"
+      data <- RunHarmony(data, group.by.vars = "BATCH")
+      data <- RunUMAP(data, reduction = "harmony", dims = 1:ifelse(length(data@reductions$harmony) < 20, length(data@reductions$harmony), 20))
+      data <- RunTSNE(data, reduction = "harmony", dims = 1:ifelse(length(data@reductions$harmony) < 20, length(data@reductions$harmony), 20), check_duplicates = FALSE)
+      current <- cbind(data.frame(genharmony_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
+    }
+
+    data_dim <- rbind(data_dim, cbind(data.frame(gen10x_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident)))
+
+    results[['p39plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "UMAP_1", dim2 = "UMAP_2", group = "SAMPLE_ID",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = sample_colors)
+
+    results[['p40plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "tSNE_1", dim2 = "tSNE_2", group = "SAMPLE_ID",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = sample_colors)
+
+    if(integration_method == "SEURAT"){
+
+      results[['p41plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                   data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                   dim1= "PC_1", dim2 = "PC_2", group = "SAMPLE_ID",
+                                                   subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                   maintitle = project_name, titlesize = 35, col = sample_colors)
+    }else if(integration_method == "HARMONY"){
+      p1 <- NULL
+      p2 <- NULL
+      p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "SAMPLE_ID", plot_title = "BEFORE_INTEGRATION",
+                         col = sample_colors, annot = FALSE, legend_position = "bottom")
+      p2 <- plot_bygroup(current, x = "HARMONY_1", y = "HARMONY_2", group = "SAMPLE_ID", plot_title = integration_name,
+                         col = sample_colors, annot = FALSE, legend_position = "bottom")
+
+      results[['p41plots']] <- p1+p2+
+        plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+    }
+
+    data_dim$GROUP <- data@meta.data[match(data_dim$SAMPLE_ID, data$orig.ident),"GROUP"]
+    data_dim$BATCH <- data@meta.data[match(data_dim$SAMPLE_ID, data$orig.ident),"BATCH"]
+
+    cgroup_colors <- gen_colors(color_conditions$bright,length(unique(data_dim$GROUP)))
+    names(cgroup_colors) <- sort(unique(data_dim$GROUP))
+
+    results[['p42plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "UMAP_1", dim2 = "UMAP_2",group = "GROUP",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = cgroup_colors)
+
+
+    results[['p43plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "tSNE_1", dim2 = "tSNE_2",group = "GROUP",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = cgroup_colors)
+
+    p1 <- NULL
+    p2 <- NULL
+    p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "GROUP", plot_title = "BEFORE_INTEGRATION",
+                       col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
+    if(integration_method == "SEURAT"){
+      p2 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == integration_name,], x = "PC_1", y = "PC_2", group = "GROUP", plot_title = integration_name,
+                         col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
+    }else{
+      p2 <- plot_bygroup(current, x = "HARMONY_1", y = "HARMONY_2", group = "GROUP", plot_title = integration_name,
+                         col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
+
+    }
+    results[['p44plots']] <- p1+p2+
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+
+    cbatch_colors <- gen_colors(color_conditions$general,length(unique(data_dim$BATCH)))
+    names(cbatch_colors) <- sort(unique(data_dim$BATCH))
+
+    results[['p45plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "UMAP_1", dim2 = "UMAP_2", group = "BATCH",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = cbatch_colors)
+
+    results[['p46plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
+                                                 dim1= "tSNE_1", dim2 = "tSNE_2", group = "BATCH",
+                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                                                 maintitle = project_name, titlesize = 35, col = cbatch_colors)
+
+    p1 <- NULL
+    p2 <- NULL
+    p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "BATCH", plot_title = "BEFORE_INTEGRATION",point_size = 1,
+                       col = cbatch_colors, annot = FALSE, legend_position = "bottom")
+    if(integration_method == "SEURAT"){
+      p2 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == integration_name,], x = "PC_1", y = "PC_2", group = "BATCH", plot_title = integration_name,point_size = 1,
+                         col = cbatch_colors, annot = FALSE, legend_position = "bottom")
+    }else{
+      p2 <- plot_bygroup(current, x = "HARMONY_1", y = "HARMONY_2", group = "BATCH", plot_title = integration_name,
+                         col = cbatch_colors, point_size = 1,annot = FALSE, legend_position = "bottom")
+    }
+    results[['p47plots']] <- p1+p2+
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+
+
+    DefaultAssay(data) <- "integrated"
+
+    n <- 10
+    top_features <- data.frame(TOP_PCA_POS_NEG_GENES = paste(capture.output(print(data[[ifelse(integration_method == "SEURAT", "pca", "harmony")]], dims = 1:5, nfeatures = n))))
+
+    results[['p48plots']] <- VizDimLoadings(data, dims = 1:2, reduction = ifelse(integration_method == "SEURAT", "pca", "harmony"),col = color_conditions$mark[1])+ plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+
+    ############## Integration Plots #################################################################
+    DefaultAssay(data) <- "integrated"
+    results[['p49plots']] <- DimHeatmap(data, assays = ifelse(integration_method == "SEURAT", "integrated", "RNA"),
+                                        reduction = ifelse(integration_method == "SEURAT", "pca", "harmony"),
+                                        dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE)+
+      plot_annotation(title = paste(project_name, sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+
+    data <- FindNeighbors(data, reduction = reduction_method, dims = 1:ifelse(ncol(data) < 30, ncol(data), 30))
+    data <- FindClusters(data, resolution = 0.8)
+
+    if(integration_method == "HARMONY"){
+      integration_cluster <- "RNA_snn_res.0.8"
+    }else{
+      integration_cluster <- "integrated_snn_res.0.8"
+    }
+
+    plotx <- gen10x_plotx(data)
+    plotx$CLUSTER <- Idents(data)
+    plotx$CLUSTER <- factor(plotx$CLUSTER, levels = sort(as.numeric(as.character(unique(plotx$CLUSTER)))))
+    plotx$GROUP <- data$GROUP
+    current_clusters <- sort(as.numeric(as.character(unique(Idents(data)))),decreasing = F)
+
+    groups <- sort(unique(plotx$GROUP))
+    cluster_colors <- gen_colors(color_conditions$colorful,length(levels(plotx$CLUSTER)))
+    names(cluster_colors) <- levels(plotx$CLUSTER)
+
+    p1 <- NULL
+    p2 <- NULL
+    p1 <- own_facet_scatter(plotx, "UMAP_1", "UMAP_2", title = project_name,isfacet = T,
+                            col=cluster_colors, color_by = "CLUSTER", group_by = "GROUP",
+                            xlabel = "UMAP_1", ylabel = "UMAP_2")
+    p2 <- own_facet_scatter(plotx, "tSNE_1", "tSNE_2", title = project_name,isfacet = T,
+                            col=cluster_colors, color_by = "CLUSTER", group_by = "GROUP",
+                            xlabel = "UMAP_1", ylabel = "UMAP_2")
+
+    results[['p50plots']] <- p1
+    results[['p51plots']] <- p2
+
+    Idents(data) <- integration_cluster
+    DefaultAssay(data) <- "RNA"
+    current_out <- deanalysis(data, current_clusters, plot_title = project_name,group=NULL,de_analysis = "findallmarkers", cluster_name = integration_cluster)
+    results[['p52data']] <- current_out$current_data_markers
+    de_type <- current_out$de_type
+    de_name <- current_out$de_name
+    top1 <- current_out$top1
+    topn <- current_out$topn
+    current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
+
+    results[['p53plots']] <- current_out$featureplot+plot_layout(ncol = 4) +
+      # facet_wrap(~GROUP)+
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+
+    for(k in 1:length(current_clusters)){
+      current <- topn[which(topn$cluster == current_clusters[k]),]
+      current <- current[order(current$p_val_adj, decreasing = F),]
+      results[['p54plots']][[length(results[['p54plots']])+1]] <- VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",
+                                                                          stack = T,flip = T,
+                                                                          cols = cgroup_colors)&
+        xlab("CLUSTERS")&
+        plot_annotation(title = paste(project_name, ": CLUSTER ", current_clusters[k], sep = ""),
+                        theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
+      names(results[['p54plots']])[length(results[['p54plots']])] <- current_clusters[k]
+    }
+
+    results[['p55plots']] <- DoHeatmap(data, features = topn$gene,
+                                       group.colors = cluster_colors, size = 8) +
+      ggtitle(project_name)+
+      NoLegend()+theme(axis.text.x = element_blank(),
+                       axis.text.y = element_text(size = 10),
+                       axis.title.x = element_blank(),
+                       axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                       legend.title = element_blank(),
+                       legend.text = element_text(size = 15),
+                       plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
+
+    DefaultAssay(data) <- "RNA"
+    orig_gene_names <- NULL
+    scale_orig_gene_names <- NULL
+    if(length(grep("ENSG[0-9]+",row.names(data), ignore.case = T)) > nrow(data)/2){
+      orig_gene_names <- row.names(data)
+      scale_orig_gene_names <- row.names(data@assays$RNA@scale.data)
+      row.names(data@assays$RNA@counts) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data@assays$RNA@counts), ignore.case = T)
+      row.names(data@assays$RNA@data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data@assays$RNA@data), ignore.case = T)
+      row.names(data@assays$RNA@scale.data) <- gsub("^ENSG[0-9]+[-|\\||\\s+\\||\\t](.*)","\\1",row.names(data@assays$RNA@scale.data), ignore.case = T)
+    }
+
+    Idents(data) <- "seurat_clusters"
+    DefaultAssay(data) <- "RNA"
+    clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data)),
+                       clusters =  data$seurat_clusters,
+                       ref = hpca.se, assay.type.test=1,
+                       labels = hpca.se$label.main)
+    data$CELL_TYPE <- clu_ann$labels[match(data$seurat_clusters,row.names(clu_ann))]
+    data@meta.data[which(is.na(data$CELL_TYPE)),"CELL_TYPE"] <- "Unidentifiable"
+
+    if(length(grep("ENSG[0-9]+",row.names(data), ignore.case = T)) > nrow(data)/2){
+      row.names(data@assays$RNA@counts) <- orig_gene_names
+      row.names(data@assays$RNA@data) <- orig_gene_names
+      row.names(data@assays$RNA@scale.data) <- scale_orig_gene_names
+    }
+    Idents(data) <- data$CELL_TYPE
+    plotx <- gen10x_plotx(data)
+    plotx$CELL_TYPE <- data$CELL_TYPE
+    plotx$GROUP <- data$GROUP
+
+    ct_colors <- gen_colors(color_conditions$bright,length(unique(plotx$CELL_TYPE)))
+    names(ct_colors) <- sort(unique((plotx$CELL_TYPE)))
+
+    results[['p56plots']] <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = project_name,
+                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+
+    results[['p57plots']] <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CELL_TYPE", plot_title = project_name,
+                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+
+    results[['p58plots']] <- own_facet_scatter(plotx, feature1 = "UMAP_1", feature2 = "UMAP_2", isfacet = T,
+                                               color_by = "CELL_TYPE", xlabel = "UMAP_1", ylabel = "UMAP_2",
+                                               group_by = "GROUP", title = project_name,
+                                               col = ct_colors)
+
+    #################################### MEDIAN EXPRESSION #########################################################
+
+    current <- group_medianexpr(current_out$current_data_markers, data, ref_group = integration_cluster, group = "seurat_clusters", cell_type = F)
+    plot_median <- current$plot_median
+    top_markers <- current$top_markers
+
+    results[['p59plots']] <- complex_heatmap(plot_median, col = color_conditions$BlueYellowRed)
+
+    #################################### TOP MARKERS + TSNE / UMAP ###################################################################
+    current_clusters <- sort(as.numeric(as.character(unique(top_markers$cluster))), decreasing = F)
+
+    p1 <- NULL
+    p2 <- NULL
+    p3 <- NULL
+    p1 <- ggplot(data=data.frame(top_markers), aes(x=gene, y=data.frame(top_markers)[,wt], fill=cluster)) +
+      geom_bar(stat="identity", position=position_dodge())+
+      scale_fill_manual(values = cluster_colors)+
+      theme_classic() +
+      coord_flip()+
+      ylab(wt)+
+      facet_wrap(~cluster, scales = "free_y") +
+      theme(axis.text.y=element_text(size = 10),
+            strip.text.x = element_text(size = 15, face = "bold"),
+            legend.title = element_text(size =20, face = "bold"),
+            legend.text = element_text(size = 15))
+
+    plotx <- gen10x_plotx(data, groups = NULL)
+    plotx$CLUSTER <- data@meta.data[,integration_cluster]
+    plotx$GROUP <- data$GROUP
+
+    p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CLUSTER",
+                       plot_title = project_name,col = cluster_colors,numeric = T,
+                       annot = T, legend_position = "right", point_size = 3)
+    p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CLUSTER",
+                       plot_title = project_name,col = cluster_colors,numeric = T,
+                       annot = T, legend_position = "right", point_size = 3)
+
+    results[['p60plots']] <- p1
+    results[['p602plots']] <- p2
+    results[['p603plots']] <- p3
+
+    # grid.arrange(p1, p2, ncol = 2)
+    # grid.arrange(p1, p3, ncol = 2)
+
+    current_clusters <- sort(as.numeric(as.character(unique(top_markers$cluster))), decreasing = F)
+    top_1_markers <- current_out$current_data_markers %>% group_by(cluster) %>% top_n(n = 1, eval(parse(text = wt)))
+
+    Idents(data) <- "seurat_clusters"
+    results[['p61plots']] <- RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 4,
+                                       cols = cluster_colors)+
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+
+    current <- data@meta.data
+    total_counts <- data.frame(table(current[,integration_cluster]))
+
+    current <- data.frame(table(current[,c("SID",integration_cluster)]))
+    current <- current[current$Freq != 0,]
+    colnames(current) <- c("SID","CLUSTER","COUNT")
+    current$CLUSTER_COUNT <- total_counts[match(current$CLUSTER, total_counts$Var1),"Freq"]
+    current$PROPORTION <- current$COUNT/current$CLUSTER_COUNT
+
+    node_proportion <- current
+
+    results[['p62plots']] <- ggplot(node_proportion, aes(CLUSTER, PROPORTION, fill = SID))+
+      geom_bar(stat="identity", alpha=0.8)+
+      coord_polar()+
+      scale_fill_viridis(discrete = T, option = "C")+
+      ggtitle(paste("Frequency of Samples in Each Node\n", project_name, sep = ""))+
+      theme_bw(base_size = 28)+
+      theme(plot.margin = unit(c(3,3,3,3), "cm"),
+            plot.title = element_text(size=20, face = "bold", hjust = 0.5),
+            legend.title=element_text(size=20, face = "bold"),
+            legend.text=element_text(size=15),
+            legend.key.size = unit(2, 'lines'),
+            axis.title.x = element_text(colour="black", size = 20, face = "bold", vjust = -10),
+            axis.title.y = element_text(colour="black", size = 20, face = "bold", vjust = 10),
+            strip.text = element_text(size = 20, face = "bold"),
+            axis.text.x=element_text(colour="black", size = 20),
+            axis.text.y=element_text(colour="black", size = 20),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank())
+
+    current <- data@meta.data
+    total_counts <- data.frame(table(current$CELL_TYPE))
+
+    current <- data.frame(table(current[,c("SID","CELL_TYPE")]))
+    current <- current[current$Freq != 0,]
+    colnames(current) <- c("SID","CELL_TYPE","COUNT")
+    current$CELL_TYPE_COUNT <- total_counts[match(current$CELL_TYPE, total_counts$Var1),"Freq"]
+    current$PROPORTION <- current$COUNT/current$CELL_TYPE_COUNT
+
+    results[['p63plots']] <- ggplot(current,aes(SID,PROPORTION,fill=CELL_TYPE))+
+      geom_bar(stat = "identity", position = "fill", color = "black", size = 1)+ #, color = "black", size = 1
+      theme_classic()+
+      # facet_wrap(~GROUP)+
+      theme(plot.margin = unit(c(1,1,1,1), "cm"),
+            axis.text.x = element_text(angle = 45, size = 15, hjust = 1, vjust = 1),
+            axis.text.y = element_text(size = 20),
+            axis.title.x = element_text(size = 25, margin=margin(10,0,0,0)),
+            axis.title.y = element_text(size = 25, margin=margin(0,10,0,0)),
+            legend.title = element_text(size = 20),
+            legend.text = element_text(size = 15),
+            legend.key.size = unit(1, "cm"),
+            legend.position = "right",
+            strip.text.x = element_text(size = 25),
+            strip.text.y = element_text(size = 25),
+            plot.title = element_text(size = 20, face=1, hjust = 0.5))+
+      scale_fill_manual(values = ct_colors)+
+      guides(color=guide_legend(title="CELL TYPES", ncol = 1),fill = guide_legend(title="CELL TYPES", ncol = 1))
+
+    #####################################################################################################################
+    current <- group_medianexpr(current_out$current_data_markers, data, group = "CELL_TYPE", cell_type = T)
+    plot_median_cell_type <- current$plot_median
+    top_markers_cell_type <- current$top_markers
+
+    results[['p64plots']] <- complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed)
+
+    p1 <- NULL
+    p2 <- NULL
+    p3 <- NULL
+    cell_types <- sort(as.character(unique(top_markers_cell_type$CELL_TYPE)))
+
+    p1 <- ggplot(data=data.frame(top_markers_cell_type), aes(x=gene, y=data.frame(top_markers_cell_type)[,wt], fill=CELL_TYPE)) +
+      geom_bar(stat="identity", position=position_dodge())+
+      scale_fill_manual(values = ct_colors)+
+      theme_classic() +
+      coord_flip()+
+      ylab(wt)+
+      facet_wrap(~CELL_TYPE, scales = "free_y") +
+      theme(axis.text.y=element_text(size = 7))
+
+    plotx <- gen10x_plotx(data, groups = NULL)
+    plotx$CELL_TYPE <- data$CELL_TYPE
+
+    p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CELL_TYPE",
+                       plot_title = integration_name,col = ct_colors,numeric = F,
+                       annot = T, legend_position = "right", point_size = 1)
+    p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CELL_TYPE",
+                       plot_title = integration_name,col = ct_colors,numeric = F,
+                       annot = T, legend_position = "right", point_size = 1)
+
+    results[['p65plots']] <- p1
+    results[['p652plots']] <- p2
+    results[['p653plots']] <- p3
+
+    # grid.arrange(p1, p2, ncol = 2)
+    # grid.arrange(p1, p3, ncol = 2)
+
+    current_out$current_data_markers$CELL_TYPE <- data@meta.data[match(current_out$current_data_markers$cluster, data@meta.data[,integration_cluster]),"CELL_TYPE"]
+    top_1_markers <- current_out$current_data_markers %>% group_by(CELL_TYPE) %>% top_n(n = 1, eval(parse(text = wt)))
+    Idents(data) <- "CELL_TYPE"
+    results[['p66plots']] <- RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 2,
+                                       cols = ct_colors)+
+      plot_annotation(title = integration_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+
+    current <- data@meta.data
+    total_counts <- data.frame(table(current$CELL_TYPE))
+
+    current <- data.frame(table(current[,c("SID","CELL_TYPE")]))
+    current <- current[current$Freq != 0,]
+    colnames(current) <- c("SID","CELL_TYPE","COUNT")
+    current$CELL_TYPE_COUNT <- total_counts[match(current$CELL_TYPE, total_counts$Var1),"Freq"]
+    current$PROPORTION <- current$COUNT/current$CELL_TYPE_COUNT
+
+    node_proportion <- current
+
+    results[['p67plots']] <- ggplot(node_proportion, aes(CELL_TYPE, PROPORTION, fill = SID))+
+      geom_bar(stat="identity", alpha=0.8)+
+      coord_polar()+
+      scale_fill_viridis(discrete = T)+
+      ggtitle(paste("Frequency of Samples in Each Cell Type\n", project_name, sep = ""))+
+      theme_bw(base_size = 25)+
+      theme(plot.margin = unit(c(3,3,3,3), "cm"),
+            plot.title = element_text(size=20, face = "bold", hjust = 0.5),
+            legend.title=element_text(size=20, face = "bold"),
+            legend.text=element_text(size=15),
+            legend.key.size = unit(2, 'lines'),
+            axis.title.x = element_text(colour="black", size = 20, face = "bold", vjust = -10),
+            axis.title.y = element_text(colour="black", size = 20, face = "bold", vjust = 10),
+            strip.text = element_text(size = 20, face = "bold"),
+            axis.text.x=element_text(colour="black", size = 20),
+            axis.text.y=element_text(colour="black", size = 20),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank())
+
+    Idents(data) <- integration_cluster
+
+    ############ GROUP COMPARISON #########################################################
+
+    Idents(data) <- integration_cluster
+    current_clusters <- sort(as.numeric(as.character(unique(Idents(data)))), decreasing = F)
+
+    if(length(unique(data$GROUP)) > 1){
+      current_out <- deanalysis(data, current_clusters, plot_title = project_name,group="GROUP",de_analysis = "finddegroup")
+      results[['p68data']] <- current_out$current_data_markers
+      de_type <- current_out$de_type
+      de_name <- current_out$de_name
+      top1 <- current_out$top1
+      topn <- current_out$topn
+      current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
+
+      results[['p69plots']] <- DotPlot(data, features = unique(top1$gene), cols = cgroup_colors, dot.scale = 8,
+                                       split.by = "GROUP", cluster.idents = F) + RotatedAxis()+ylab("CLUSTER+GROUP")+
+        plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5)))
+
+      for(k in 1:length(current_clusters)){
+        current <- topn[which(topn$cluster == current_clusters[k]),]
+        current <- current[order(current$p_val_adj, decreasing = F),]
+        results[['p70plots']][[length(results[['p70plots']])+1]] <- VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",stack = T,flip = T,
+                                                                            cols = cgroup_colors)&
+          xlab("CLUSTERS")&
+          plot_annotation(title = paste(project_name, ": CLUSTER ", current_clusters[k], sep = ""),
+                          theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
+        names(results[['p70plots']])[length(results[['p70plots']])] <-paste("CLUSTER_",current_clusters[k], sep = "")
+      }
+
+      for(i in 1:length(current_out$featureplot)){
+        results[['p71plots']][[length(results[['p71plots']])+1]] <- current_out$featureplot[[i]]
+        names(results[['p71plots']])[length(results[['p71plots']])] <- names(current_out$featureplot)[i]
+
+      }
+
+      # current_clusters <- sort(as.numeric(as.character(unique(Idents(data)))), decreasing = F)
+      # Idents(data) <- integration_cluster
+      # current_out <- deanalysis(data, current_clusters, plot_title = project_name,group="GROUP",de_analysis = "findconservedmarkers")
+      # results[['p72data']] <- current_out$current_data_markers
+      # de_type <- current_out$de_type
+      # de_name <- current_out$de_name
+      # top1 <- current_out$top1
+      # topn <- current_out$topn
+      # current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
+      #
+      # for(i in 1:length(current_out$featureplot)){
+      #   results[['p73plots']][[length(results[['p73plots']])+1]] <- current_out$featureplot[[i]]
+      #   names(results[['p73plots']])[length(results[['p73plots']])] <- paste("CLUSTER_",names(current_out$featureplot)[i], sep = "")
+      # }
+
+    }
+  }
+
+  #################### PSEUDOTIME TRAJECTORY #######################################################
+  mono3_current <- NULL
+  sce_current <- NULL
+
+  for(j in 1:length(data_current)){
+    mono3_current[[j]] <- as.cell_data_set(data_current[[j]])
+
+    ##### UMAP ######
+    reducedDim(mono3_current[[j]], type = "PCA") <- data_current[[j]]@reductions$pca@cell.embeddings
+    mono3_current[[j]]@preprocess_aux$prop_var_expl <- data_current[[j]]@reductions$pca@stdev
+    mono3_current[[j]]@preprocess_aux$gene_loadings <- data_current[[j]]@reductions[["pca"]]@feature.loadings
+    mono3_current[[j]]@int_colData@listData$reducedDims$UMAP <- data_current[[j]]@reductions$umap@cell.embeddings
+    mono3_current[[j]]@clusters$UMAP$clusters <- data_current[[j]]$seurat_clusters
+    mono3_current[[j]]@clusters@listData[["UMAP"]][["clusters"]] <- data_current[[j]]$seurat_clusters
+    mono3_current[[j]]@clusters@listData[["UMAP"]]$cluster_result$optim_res$membership <- data_current[[j]]$seurat_clusters
+    mono3_current[[j]]@clusters@listData[["UMAP"]][["louvain_res"]] <- NULL
+    rownames(mono3_current[[j]]@principal_graph_aux$UMAP$dp_mst) <- NULL
+    colnames(mono3_current[[j]]@int_colData@listData$reducedDims$UMAP) <- NULL
+    mono3_current[[j]] <- cluster_cells(mono3_current[[j]], reduction_method = "UMAP", resolution = 1e-3)
+    mono3_current[[j]]@clusters@listData[["UMAP"]][["clusters"]] <- data_current[[j]]$seurat_clusters
+    mono3_current[[j]]@clusters@listData[["UMAP"]][["louvain_res"]] <- "NA"
+    mono3_current[[j]] <- learn_graph(mono3_current[[j]])
+
+    ccolors <- gen_colors(color_conditions$colorful,length(unique(mono3_current[[j]]@clusters$UMAP$clusters)))
+    names(ccolors) <- sort(as.numeric(as.character(unique(mono3_current[[j]]@clusters$UMAP$clusters))))
+
+    results[['p72plots']][[j]] <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
+                                              group = "seurat_clusters", label_size = 7,
+                                              paste(annot_names[j],"\nTRAJECTORY - COLOR BY CLUSTERS"),
+                                              ccolors, length(ccolors))
+    names(results[['p72plots']])[j] <- names(data_current)[j]
+
+    results[['p73plots']][[j]] <- ggplotly(results[['p72plots']][[j]]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+                                             guides(color=guide_legend(title="CLUSTER"))+
+                                             ggtitle(paste("<b>",names(data_current)[j],"</b>",sep = "")))
+    names(results[['p73plots']])[j] <- names(data_current)[j]
+
+    results[['p74plots']][[j]] <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
+                                              group = "CELL_TYPE", label_size = 6,
+                                              paste(annot_names[j],"\nTRAJECTORY - COLOR BY CELL TYPE"),
+                                              color_conditions$tenx, length(unique(mono3_current[[j]]$CELL_TYPE)))
+    names(results[['p74plots']])[j] <- names(data_current)[j]
+
+    results[['p75plots']][[j]] <- ggplotly(results[['p74plots']][[j]]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+                                             # guides(color=guide_legend(title=""))+
+                                             ggtitle(paste("<b>",names(data_current)[j],"</b>",sep = "")))
+    names(results[['p75plots']])[j] <- names(data_current)[j]
+
+    results[['p76plots']][[j]] <- plot_cells(mono3_current[[j]],
+                                             color_cells_by = "partition",
+                                             group_label_size = 7,
+                                             graph_label_size = 3,
+                                             cell_size = 2,
+                                             cell_stroke = I(2/2),
+                                             alpha = 0.7,
+                                             trajectory_graph_segment_size = 1.5,
+                                             label_cell_groups=FALSE,
+                                             label_leaves=TRUE,
+                                             label_branch_points=TRUE)
+
+    results[['p76plots']][[j]] <- adjust_plot(results[['p76plots']][[j]],col = color_conditions$bright, n = length(unique(mono3_current[[j]]@clusters$UMAP$clusters)),
+                                              plot_title = paste(annot_names[j],"\nTRAJECTORY - COLOR BY PARTITION"))
+
+    names(results[['p76plots']])[j] <- names(data_current)[j]
+
+    current_clusters <- sort(as.numeric(as.character(unique(mono3_current[[j]]@clusters$UMAP$clusters))), decreasing = F)
+    for(i in 1:length(current_clusters)){
+      mono3_current[[j]] <- order_cells(mono3_current[[j]],
+                                        root_pr_nodes=get_earliest_principal_node(mono3_current[[j]],
+                                                                                  group = "seurat_clusters", group_element = current_clusters[i]))
+
+      results[['p77plots']][[length(results[['p77plots']])+1]] <- plot_cells(mono3_current[[j]],
+                                                                             color_cells_by = "pseudotime",
+                                                                             group_label_size = 7,
+                                                                             graph_label_size = 5,
+                                                                             cell_size = 1,
+                                                                             cell_stroke = I(2/2),
+                                                                             alpha = 1,
+                                                                             trajectory_graph_segment_size = 1.5,
+                                                                             label_cell_groups=FALSE,
+                                                                             label_leaves=FALSE,
+                                                                             label_branch_points=FALSE)
+
+      results[['p77plots']][[length(results[['p77plots']])]] <- adjust_plot(results[['p77plots']][[length(results[['p77plots']])]], col = color_conditions$colorful, n = length(current_clusters),
+                                                                            plot_title = paste(annot_names[j],"\nPSEUDOTIME - ROOT: CLUSTER ", current_clusters[i], sep = ""),
+                                                                            fill = T)
+
+      names(results[['p77plots']])[length(results[['p77plots']])] <- paste("CLUSTER_",current_clusters[i],"|",names(data_current)[j], sep = "")
+
+    }
+
+    pseudo_para <- c("PSEUDOTIME_PC1","PSEUDOTIME_UMAP1","PSEUDOTIME_tSNE1")
+
+    # if(to_annotate[[j]] == TRUE){
+    chosen_para <- c("seurat_clusters", "CELL_TYPE")
+    chosen_para_names <- c("CLUSTERS", "CELL_TYPE")
+
+    plotx <- data.frame(
+      PSEUDOTIME_PC1 = rank(data_current[[j]]@reductions$pca@cell.embeddings[,"PC_1"]),
+      PSEUDOTIME_UMAP1 = rank(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"]),
+      PSEUDOTIME_tSNE1 = rank(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"]),
+      data_current[[j]]@meta.data)
+
+    k <- 2
+    for(m in 1:length(chosen_para)){
+      for(n in 1:length(pseudo_para)){
+        results[['p78plots']][[length(results[['p78plots']])+1]] <- plot_bygroup(plotx, x = pseudo_para[n], y = chosen_para[m], group = chosen_para[m],
+                                                                                 plot_title = annot_names[j], col = if(chosen_para_names[m] == "CELL_TYPE"){color_conditions$tenx}else{color_conditions$colorful},
+                                                                                 annot = F, legend_position = "none", numeric = T)+
+          ylab(chosen_para_names[m])
+
+        names(results[['p78plots']])[length(results[['p78plots']])] <- paste(names(data_current)[j],"|",chosen_para_names[m],"|",pseudo_para[n], sep = "")
+
+        k <- k + 1
+      }
+    }
+
+    # if(to_annotate[[j]] == TRUE){
+    current_cell_types <- sort(as.character(unique(colData(mono3_current[[j]])[,"CELL_TYPE"])))
+    for(i in 1:length(current_cell_types)){
+      mono3_current[[j]] <- order_cells(mono3_current[[j]],
+                                        root_pr_nodes=get_earliest_principal_node(mono3_current[[j]],
+                                                                                  group = "CELL_TYPE", group_element = current_cell_types[i]))
+
+      results[['p79plots']][[length(results[['p79plots']])+1]] <- plot_cells(mono3_current[[j]],
+                                                                             color_cells_by = "pseudotime",
+                                                                             group_label_size = 7,
+                                                                             graph_label_size = 5,
+                                                                             cell_size = 2,
+                                                                             cell_stroke = I(2/2),
+                                                                             alpha = 0.7,
+                                                                             trajectory_graph_segment_size = 1.5,
+                                                                             label_cell_groups=FALSE,
+                                                                             label_leaves=FALSE,
+                                                                             label_branch_points=FALSE)
+
+      results[['p79plots']][[length(results[['p79plots']])]] <- adjust_plot(results[['p79plots']][[length(results[['p79plots']])]], col = color_conditions$tenx, n = length(current_cell_types),
+                                                                            plot_title = paste(annot_names[j],"\nPSEUDOTIME - ROOT CELL TYPE: ", toupper(current_cell_types[i]), sep = ""),
+                                                                            fill = T)
+      names(results[['p79plots']])[length(results[['p79plots']])] <- paste(names(data_current)[j],"|",toupper(current_cell_types[i]), sep = "")
+    }
+
+    data_current[[j]] <- RunUMAP(data_current[[j]], n.components = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+
+    results[['p80plots']][[j]] <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
+                                          data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_2"],
+                                          data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_3"],
+                                          color_group = data_current[[j]]@meta.data[,"CELL_TYPE"],
+                                          plot_title = names(data_current)[j],
+                                          col = color_conditions$tenx,
+                                          n = length(unique(data_current[[j]]$seurat_clusters)),
+                                          lt = "CELL TYPE", t1 = "UMAP_1",t2 = "UMAP_2", t3= "UMAP_3",
+                                          current_text= paste("Cluster ",data_current[[j]]$seurat_clusters,"\n",
+                                                              "Cell: ",row.names(data_current[[j]]@meta.data),"\n",
+                                                              data_current[[j]]@meta.data[,"CELL_TYPE"], sep = ""))
+    names(results[['p80plots']])[j] <- names(data_current)[j]
+
+    data_current[[j]] <- RunTSNE(data_current[[j]], dim.embed = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
+
+    results[['p81plots']][[j]] <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
+                                          data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_2"],
+                                          data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_3"],
+                                          color_group = data_current[[j]]@meta.data[,"CELL_TYPE"],
+                                          plot_title = names(data_current)[j],
+                                          col = color_conditions$tenx,
+                                          n = length(unique(data_current[[j]]$seurat_clusters)),
+                                          lt = "CELL TYPE", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
+                                          current_text= paste("Cluster ",data_current[[j]]$seurat_clusters,"\n",
+                                                              "Cell: ",row.names(data_current[[j]]@meta.data),"\n",
+                                                              data_current[[j]]@meta.data[,"CELL_TYPE"], sep = ""))
+    names(results[['p81plots']])[j] <- names(data_current)[j]
+
+    results[['p82plots']][[j]] <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
+                                          data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_2"],
+                                          data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_3"],
+                                          color_group = data_current[[j]]$seurat_clusters,
+                                          plot_title = names(data_current)[j],
+                                          col = color_conditions$colorful,
+                                          n = length(unique(data_current[[j]]$seurat_clusters)),
+                                          lt = "CLUSTER", t1 = "UMAP_1",t2 = "UMAP_2", t3= "UMAP_3",
+                                          current_text= paste("Cell: ",row.names(data_current[[j]]@meta.data),"\nCluster: ",
+                                                              data_current[[j]]$seurat_clusters, sep = ""))
+    names(results[['p82plots']])[j] <- names(data_current)[j]
+
+    results[['p83plots']][[j]] <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
+                                          data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_2"],
+                                          data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_3"],
+                                          color_group = data_current[[j]]$seurat_clusters,
+                                          plot_title = names(data_current)[j],
+                                          col = color_conditions$colorful,
+                                          n = length(unique(data_current[[j]]$seurat_clusters)),
+                                          lt = "CLUSTER", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
+                                          current_text= paste("Cell: ",row.names(data_current[[j]]@meta.data),"\nCluster: ",
+                                                              data_current[[j]]$seurat_clusters, sep = ""))
+    names(results[['p83plots']])[j] <- names(data_current)[j]
+
+    data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
+    data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+  }
+
+  if(length(data_current) > 1){
+
+    pseudo_para <- c("PSEUDOTIME_PC1","PSEUDOTIME_UMAP1","PSEUDOTIME_tSNE1")
+    chosen_para <- c(integration_cluster, "CELL_TYPE","orig.ident")
+    chosen_para_names <- c("CLUSTERS", "CELL_TYPE","SAMPLE_ID")
+    plotx <- data.frame(
+      PSEUDOTIME_PC1 = rank(data@reductions$pca@cell.embeddings[,"PC_1"]),
+      PSEUDOTIME_UMAP1 = rank(data@reductions$umap@cell.embeddings[,"UMAP_1"]),
+      PSEUDOTIME_tSNE1 = rank(data@reductions$tsne@cell.embeddings[,"tSNE_1"]),
+      data@meta.data)
+
+    for(m in 1:length(chosen_para)){
+      for(n in 1:length(pseudo_para)){
+        results[['p84plots']][[length(results[['p84plots']])+1]] <- plot_bygroup(plotx, x = pseudo_para[n], y = chosen_para[m], group = chosen_para[m],
+                                                                                 plot_title = project_name, col = NULL, annot = F, legend_position = "none", numeric = T)+
+          ylab(chosen_para_names[m])
+        names(results[['p84plots']])[length(results[['p84plots']])] <- paste(pseudo_para[n], "|", chosen_para_names[m],sep = "")
+      }
+    }
+
+    if(integration_name == "SEURAT_INTEGRATED"){
+      DefaultAssay(data) <- "integrated"
+      mono3data <- as.cell_data_set(data)
+    }else if(integration_name == "HARMONY_INTEGRATED"){
+      DefaultAssay(data) <- "RNA"
+      mono3data <- as.cell_data_set(data)
+    }
+
+    ##### UMAP ######
+    named_clusters <- data@meta.data[,integration_cluster]
+    names(named_clusters) <- row.names(data@meta.data)
+    reducedDim(mono3data, type = "PCA") <- data@reductions[[reduction_method]]@cell.embeddings
+    mono3data@preprocess_aux$prop_var_expl <- data@reductions$pca@stdev
+    mono3data@preprocess_aux$gene_loadings <- data@reductions[[reduction_method]]@feature.loadings
+    mono3data@int_colData@listData$reducedDims$UMAP <- data@reductions$umap@cell.embeddings
+    mono3data@clusters$UMAP$clusters <- named_clusters
+    mono3data@clusters@listData[["UMAP"]][["clusters"]] <- named_clusters
+    mono3data@clusters@listData[["UMAP"]]$cluster_result$optim_res$membership <- named_clusters
+    mono3data@clusters@listData[["UMAP"]][["louvain_res"]] <- NULL
+    rownames(mono3data@principal_graph_aux$UMAP$dp_mst) <- NULL
+    colnames(mono3data@int_colData@listData$reducedDims$UMAP) <- NULL
+    mono3data <- cluster_cells(mono3data, reduction_method = "UMAP", resolution = 1e-3)
+    mono3data@clusters@listData[["UMAP"]][["clusters"]] <- named_clusters
+    mono3data@clusters@listData[["UMAP"]][["louvain_res"]] <- "NA"
+    mono3data <- learn_graph(mono3data)
+
+    results[['p85plots']] <- plot_pseudo(mono3data, reduction = "UMAP",
+                                         group = integration_cluster, label_size = 7,
+                                         # cell_size = 0.5,traj_size = 0.8,
+                                         paste(project_name,"\nINTEGRATED TRAJECTORY - COLOR BY CLUSTERS"),
+                                         color_conditions$colorful, length(unique(mono3data@clusters$UMAP$clusters)))+facet_wrap(~GROUP)
+
+    results[['p86plots']] <- ggplotly(results[['p85plots']]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+                                        guides(color=guide_legend(title="CLUSTER"))+
+                                        ggtitle(paste("<b>",project_name,"</b>",sep = "")))
+
+    results[['p87plots']] <- plot_pseudo(mono3data, reduction = "UMAP",
+                                         group = "CELL_TYPE", label_size = 6,
+                                         # cell_size = 0.5,traj_size = 0.8,
+                                         paste(project_name,"\nINTEGRATED TRAJECTORY - COLOR BY CELL TYPE"),
+                                         color_conditions$tenx, length(unique(mono3data$CELL_TYPE)))+
+      facet_wrap(~GROUP)
+
+    results[['p88plots']] <- ggplotly(results[['p87plots']]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+                                        # guides(color=guide_legend(title=""))+
+                                        ggtitle(paste("<b>",project_name,"</b>",sep = "")))
+
+    results[['p89plots']] <- plot_cells(mono3data,
+                                        color_cells_by = "partition",
+                                        group_label_size = 7,
+                                        graph_label_size = 3,
+                                        cell_size = 2,
+                                        cell_stroke = I(2/2),
+                                        alpha = 0.7,
+                                        trajectory_graph_segment_size = 1.5,
+                                        label_cell_groups=FALSE,
+                                        label_leaves=TRUE,
+                                        label_branch_points=TRUE)
+
+    results[['p89plots']] <- adjust_plot(results[['p89plots']],col = color_conditions$colorful, n = length(unique(mono3data@clusters$UMAP$clusters)),
+                                         plot_title = paste(project_name,"\nTRAJECTORY - COLOR BY PARTITION"))
+
+    current_clusters <- sort(as.numeric(as.character(unique(mono3data@clusters$UMAP$clusters))), decreasing = F)
+    for(i in 1:length(current_clusters)){
+      mono3data <- order_cells(mono3data,
+                               root_pr_nodes=get_earliest_principal_node(mono3data,
+                                                                         group = "seurat_clusters", group_element = current_clusters[i]))
+
+      results[['p90plots']][[length(results[['p90plots']])+1]] <- plot_cells(mono3data,
+                                                                             color_cells_by = "pseudotime",
+                                                                             group_label_size = 7,
+                                                                             graph_label_size = 5,
+                                                                             cell_size = 1,
+                                                                             cell_stroke = I(2/2),
+                                                                             alpha = 0.7,
+                                                                             trajectory_graph_segment_size = 1.5,
+                                                                             label_cell_groups=FALSE,
+                                                                             label_leaves=FALSE,
+                                                                             label_branch_points=FALSE)+
+        facet_wrap(~GROUP)
+
+      results[['p90plots']][[length(results[['p90plots']])]] <- adjust_plot(results[['p90plots']][[length(results[['p90plots']])]], col = color_conditions$colorful, n = length(current_clusters),
+                                                                            plot_title = paste(project_name,"\nPSEUDOTIME - ROOT: CLUSTER ", current_clusters[i], sep = ""),
+                                                                            fill = T)
+      names(results[['p90plots']])[length(results[['p90plots']])] <- current_clusters[i]
+    }
+
+    if(reduction_method == "harmony"){
+      DefaultAssay(data) <- 'RNA'
+      data <- RunTSNE(data, dim.embed = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+      data <- RunUMAP(data, n.components = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+
+    }else if(reduction_method == "pca"){
+      DefaultAssay(data) <- 'integrated'
+      data <- RunTSNE(data, dim.embed = 3, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+      data <- RunUMAP(data, n.components = 3, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+    }
+
+    results[['p91plots']] <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
+                                     data@reductions$umap@cell.embeddings[,"UMAP_2"],
+                                     data@reductions$umap@cell.embeddings[,"UMAP_3"],
+                                     color_group = data@meta.data[,"CELL_TYPE"],
+                                     plot_title = names(data_current)[j],
+                                     col = color_conditions$tenx,
+                                     n = length(unique(data$CELL_TYPE)),
+                                     lt = "CELL TYPE", t1 = "UMAP_1",t2 = "UMAP_2", t3= "UMAP_3",
+                                     current_text= paste("Cluster ",data@meta.data[,integration_cluster],"\n",
+                                                         "Cell: ",row.names(data@meta.data),"\n",
+                                                         data@meta.data[,"CELL_TYPE"], sep = ""))
+
+    results[['p92plots']] <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
+                                     data@reductions$tsne@cell.embeddings[,"tSNE_2"],
+                                     data@reductions$tsne@cell.embeddings[,"tSNE_3"],
+                                     color_group = data@meta.data[,"CELL_TYPE"],
+                                     plot_title = names(data_current)[j],
+                                     col = color_conditions$tenx,
+                                     n = length(unique(data$CELL_TYPE)),
+                                     lt = "CELL TYPE", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
+                                     current_text= paste("Cluster ",data@meta.data[,integration_cluster],"\n",
+                                                         "Cell: ",row.names(data@meta.data),"\n",
+                                                         data@meta.data[,"CELL_TYPE"], sep = ""))
+
+
+    results[['p93plots']] <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
+                                     data@reductions$umap@cell.embeddings[,"UMAP_2"],
+                                     data@reductions$umap@cell.embeddings[,"UMAP_3"],
+                                     color_group = data@meta.data[,integration_cluster],
+                                     plot_title = names(data_current)[j],
+                                     col = color_conditions$colorful,
+                                     n = length(unique(data@meta.data[,integration_cluster])),
+                                     lt = "CLUSTER", t1 = "UMAP_1",t2 = "UMAP_2", t3= "UMAP_3",
+                                     current_text= paste("Cell: ",row.names(data@meta.data),"\nCluster: ",
+                                                         data@meta.data[,integration_cluster], sep = ""))
+
+    results[['p94plots']] <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
+                                     data@reductions$tsne@cell.embeddings[,"tSNE_2"],
+                                     data@reductions$tsne@cell.embeddings[,"tSNE_3"],
+                                     color_group = data@meta.data[,integration_cluster],
+                                     plot_title = names(data_current)[j],
+                                     col = color_conditions$colorful,
+                                     n = length(unique(data@meta.data[,integration_cluster])),
+                                     lt = "CLUSTER", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
+                                     current_text= paste("Cell: ",row.names(data@meta.data),"\nCluster: ",
+                                                         data@meta.data[,integration_cluster], sep = ""))
+  }
+  ##########################################################################################
+  #######################################################################################################################################
+
+
 }
 

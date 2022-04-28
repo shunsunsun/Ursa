@@ -9,7 +9,7 @@ scCNVPip(
   input_dir = "./",
   output_dir = "./",
   pheno_file,
-  confidence_threshold = 15,
+  confidence_threshold = 50,
   size_threshold = 2e+06,
   cnv_cell_threshold = 5
 )
@@ -25,7 +25,7 @@ created under the specified output directory.}
 
 \item{pheno_file}{Meta data file directory. Accept only .csv/.txt format files.}
 
-\item{confidence_threshold}{CNV event confidence threshold. Default to 15.}
+\item{confidence_threshold}{CNV event confidence threshold. Default is 50.}
 
 \item{size_threshold}{CNV event length. Default to 2Mbp in size.}
 

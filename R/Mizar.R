@@ -1,18 +1,33 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Phecda: Spatial
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
-#' @importFrom Seurat
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
+#' @importFrom dplyr
 #' @importFrom ggplot2
-#' @importFrom SingleR
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
 #' @importFrom gridExtra
-#' @importFrom
-#' @importFrom
-#' @importFrom
-#' @importFrom
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom celldex
+#' @importFrom Seurat
+#' @importFrom SingleR
 #'
 NULL
 
@@ -42,9 +57,9 @@ SpatialPip <- function(project_name = "Polaris_Spatial",
   pheno_data <- pheno_ini(pheno_file, pipeline = "SPATIAL", isDir = T)
   color_conditions <- color_ini()
   ctime <- time_ini()
-  hpca.se <- readRDS("DB/hpca.se.RDS")
+  hpca.se <- HumanPrimaryCellAtlasData()
   hs <- org.Hs.eg.db
-  hgnc.table <- readRDS("DB/hgnc.table.RDS")
+  hgnc.table <- data("hgnc.table", package="HGNChelper")
   p_val_adj <- 0.1
   project_name <- gsub("\\s+|\\(|\\)|-|\\/|\\?","",project_name)
   print(paste("Creating output folder ",project_name,"_",ctime," ..", sep = ""))
@@ -119,6 +134,7 @@ SpatialPip <- function(project_name = "Polaris_Spatial",
   data <- FindNeighbors(data, reduction = "pca", dims = 1:30)
   data <- FindClusters(data, verbose = FALSE)
   data <- RunUMAP(data, reduction = "pca", dims = 1:30)
+  data <- RunTSNE(data, reduction = "pca", dims = 1:30, check_duplicates = FALSE)
 
   for(i in 1:length(annot_names)){
     current <- subset(data, subset = orig.ident == annot_names[i])
@@ -193,7 +209,7 @@ p2 <- p2+theme(legend.text = element_text(size = 10))
 p2 <- adjust_theme(p2)
 
 somePNGPath <- paste(cdir,"3SCA_UMAP_ALL_SAMPLES_",project_name, ".png", sep = "")
-png(somePNGPath, width = 5000, height =2000, units = "px", res = 150)
+png(somePNGPath, width = 5000, height =2000, units = "px", res = 300)
 print(p1|p2)
 dev.off()
 

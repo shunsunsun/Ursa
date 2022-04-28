@@ -1,13 +1,37 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Megrez: scCNV
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-15
 ############################################################################################################
-#' @importFrom data.table data.table
-#' @importFrom intervalaverage isolateoverlaps
-#' @importFrom fastcluster hclust
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
+#' @importFrom dplyr
+#' @importFrom ggplot2
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
+#' @importFrom gridExtra
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom adegenet
+#' @importFrom ape
+#' @importFrom fastcluster
+#' @importFrom GenomicRanges
+#' @importFrom ggtree
+#' @importFrom intervalaverage
+#' @importFrom umap
 #'
 NULL
 
@@ -25,7 +49,7 @@ NULL
 #' A new folder with the given project name with time stamp as suffix will be
 #' created under the specified output directory.
 #' @param pheno_file Meta data file directory. Accept only .csv/.txt format files.
-#' @param confidence_threshold CNV event confidence threshold. Default to 15.
+#' @param confidence_threshold CNV event confidence threshold. Default is 50.
 #' @param size_threshold CNV event length. Default to 2Mbp in size.
 #' @param cnv_cell_threshold Filtering out CNV events that are present in less than N% of all cells.
 #' Values range from 0 to 100. Default to 5.
@@ -36,7 +60,7 @@ scCNVPip <- function(project_name = "Polaris_scCNV",
                      input_dir = "./",
                      output_dir = "./",
                      pheno_file,
-                     confidence_threshold = 15,
+                     confidence_threshold = 50,
                      size_threshold = 2000000,
                      cnv_cell_threshold = 5){
   print("Initialising pipeline environment..")

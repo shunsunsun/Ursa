@@ -8,7 +8,9 @@ scRNASEQPip(
   project_name = "Polaris_scRNASEQ",
   input_dir = "./",
   output_dir = "./",
-  pheno_file
+  pheno_file,
+  integration_method = "Seurat",
+  cc_regression = 0
 )
 }
 \arguments{
@@ -23,6 +25,13 @@ created under the specified output directory.}
 
 \item{pheno_file}{Meta data file directory. Accept only .csv/.txt format
 files.}
+
+\item{integration_method}{Integration method. Accepts 'Seurat' or "Harmony'
+integration. Default is Seurat.}
+
+\item{cc_regression}{Cell cycle regression method. Accepts 0 for no regression,
+1 for regression with two-phases, 2 for regression with phase difference (See Seurat).
+Default is 0.}
 }
 \description{
 This function will run a bioinformatics analysis of post-quantification scRNASEQ

@@ -1,3 +1,6 @@
+#' @keywords common
+#' @importFrom ggplot2
+
 plot_ploidy <- function(results, output_dir){
   data <- results@data
   data_cell_stats <- results@cell_stats
@@ -366,4 +369,22 @@ gen10x_plotx <- function(data, groups = NULL, selected = "ALL", include_meta = F
 
   return(plotx)
 
+}
+
+own_violin <- function(plotx, x = "SAMPLE_ID", feature, plotx_title, col = NULL, title.size = 20, angle = 0, hjust=NULL,vjust = NULL){
+  p <- ggplot(plotx, aes_string(x=x, y=feature, fill = x)) +
+    geom_violin(trim=TRUE) + scale_fill_manual(values = col)+
+    theme_classic()+
+    # scale_y_continuous(trans='log10') +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = angle, size = ifelse(nchar(as.character(unique(plotx$SAMPLE_ID))) > 20, 12,15), hjust=hjust,vjust = vjust),
+          axis.text.y = element_text(size = 15),
+          plot.title = element_text(size = title.size, face = "bold", hjust = 0.5),
+          axis.title.x = element_text(size = 15, margin=margin(10,0,0,0),face = "bold")) +
+    xlab("SAMPLE_ID") + ylab("") + ggtitle(plotx_title)
+  if(max(plotx[,feature]) > 0){
+    p <- p + geom_jitter(size = 0.05)
+  }
+
+  return(p)
 }

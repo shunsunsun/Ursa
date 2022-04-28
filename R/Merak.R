@@ -1,25 +1,43 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Merak: Flow
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
-#' @importFrom flowCore read.flowSet
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
+#' @importFrom dplyr
 #' @importFrom ggplot2
-#' @importFrom flowWorkspace gh_pop_get_data
-#' @importFrom ggcyto ggcyto_par_set
-#' @importFrom CytoExploreR cyto_transform
-#' @importFrom limma plotMDS
-#' @importFrom ggrepel geom_label_repel
-#' @importFrom Biobase AnnotatedDataFrame
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
+#' @importFrom gridExtra
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom akmedoids
+#' @importFrom Biobase
+#' @importFrom ConsensusClusterPlus
+#' @importFrom CytoExploreR
+#' @importFrom CytoExploreRData
+#' @importFrom flowCore
 #' @importFrom FlowSOM
-#' @importFrom ConsensusClusterPlus ConsensusClusterPlus
-#' @importFrom akmedoids elbow_point
-#' @importFrom viridis scale_fill_viridis
-#' @importFrom
-#' @importFrom
-#' @importFrom
+#' @importFrom flowWorkspace
+#' @importFrom ggcyto
+#' @importFrom limma
+#' @importFrom openCyto
+#' @importFrom robustbase
+#' @importFrom Seurat
 #'
 NULL
 

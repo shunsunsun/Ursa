@@ -1,11 +1,12 @@
-Package: Polaris
+Package: Ursa
 Type: Package
-Title: Single Cell Omics Automated Analysis
+Title: An Automated Multi-omics Package for Single-cell Analysis
 Version: 1.0.0
 Author: Lu Pan <lu.pan@ki.se>
 Maintainer: Lu Pan <lu.pan@ki.se>
-Description: Single Cell Omics Automated Analysis contains major single cell omics pipelines, and each performs automated pipeline analysis.
+Description: Ursa contains 7 major single cell omics automated workflows, including scRNA-seq, scATAC-seq, scImmune profiling, spatial transcriptomics, scCNV, CyTOF and flow cytometry.
 License: MIT License
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
+Imports: ComplexHeatmap, cowplot, data.table, dplyr, ggplot2, ggpubr, ggrepel, ggridges, ggthemes, gplots, gridExtra, HGNChelper, patchwork, plot3D, plyr, RColorBrewer, reshape2, scales, tidyverse, viridis, akmedoids, celldex, celltalker, DOSE, enrichplot, harmony, HGNChelper, htmlwidgets, monocle3, org.Hs.eg.db, plotly, Seurat, SeuratWrappers, SingleR, BSgenome, BSgenome.Hsapiens.UCSC.hg19, BSgenome.Hsapiens.UCSC.hg38, chromVAR, EnsDb.Hsapiens.v75, EnsDb.Hsapiens.v86, GenomeInfoDb, JASPAR2020, motifmatchr, Signac, TFBSTools, circlize, ggalluvial, immunarch, scRepertoire, vegan, adegenet, ape, fastcluster, GenomicRanges, ggtree, intervalaverage, umap, Biobase, ConsensusClusterPlus, flowCore, FlowSOM, flowWorkspace, ggcyto, limma, openCyto, Rtsne, CytoExploreR, CytoExploreRData, robustbase

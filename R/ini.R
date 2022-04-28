@@ -1,4 +1,5 @@
-library(ggthemes)
+#' @keywords ini
+#' @importFrom ggthemes
 
 time_ini <- function(){
   x <- format(Sys.time(), format = "%Y%m%d%H%M%S")
@@ -101,7 +102,7 @@ pheno_ini <- function(phenodata_dir, pipeline, extra_para = NULL, isDir = TRUE){
   if(toupper(pipeline) == "SPATIAL"){
     colnames(pheno_data) <- c("FILE","SAMPLE_ID","GROUP")
   }else if (toupper(pipeline) == "SCRNASEQ"){
-    colnames(pheno_data) <- c("FILE","SAMPLE_ID","INDIVIDUAL_ID","BATCH","GROUP") # "CELL_CYCLE", "DATA_TYPE","CELL_TYPE","PAIR_ID","TISSUE_TYPE","CANCER_TYPE"
+    colnames(pheno_data) <- c("FILE","SAMPLE_ID","BATCH","GROUP") # "CELL_CYCLE", "DATA_TYPE","CELL_TYPE","PAIR_ID","TISSUE_TYPE","CANCER_TYPE"
   } else if(toupper(pipeline) == "SMARTSEQ2"){
     colnames(pheno_data) <- c("FILE","SAMPLE_ID","INDIVIDUAL_ID","BATCH","GROUP")
   }else if(toupper(pipeline) == "SCCNV"){

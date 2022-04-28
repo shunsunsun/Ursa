@@ -1,20 +1,43 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Alkaid: scATAC
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
-#' @importFrom Seurat
-#' @importFrom ggplot2
-#' @importFrom Signac
-#' @importFrom chromVAR
-#' @importFrom GenomeInfoDb
-#' @importFrom patchwork
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
 #' @importFrom dplyr
+#' @importFrom ggplot2
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
 #' @importFrom gridExtra
-#' @importFrom motifmatchr
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom BSgenome
+#' @importFrom BSgenome.Hsapiens.UCSC.hg19
+#' @importFrom BSgenome.Hsapiens.UCSC.hg38
+#' @importFrom celldex
+#' @importFrom chromVAR
+#' @importFrom EnsDb.Hsapiens.v75
+#' @importFrom EnsDb.Hsapiens.v86
+#' @importFrom GenomeInfoDb
 #' @importFrom JASPAR2020
+#' @importFrom motifmatchr
+#' @importFrom Seurat
+#' @importFrom Signac
+#' @importFrom SingleR
 #' @importFrom TFBSTools
 #'
 NULL

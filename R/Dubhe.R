@@ -1,16 +1,39 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa: an automated multi-omics package for single-cell analysis
 # Dubhe: scImmune
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-17
 ############################################################################################################
-#' @importFrom SingleR
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
+#' @importFrom dplyr
 #' @importFrom ggplot2
-#' @importFrom Seurat
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
+#' @importFrom gridExtra
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom celldex
+#' @importFrom circlize
+#' @importFrom ggalluvial
+#' @importFrom harmony
 #' @importFrom immunarch
 #' @importFrom scRepertoire
-#' @importFrom SingleCellExperiment
+#' @importFrom Seurat
+#' @importFrom SingleR
+#' @importFrom vegan
 #'
 NULL
 

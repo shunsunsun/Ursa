@@ -1,18 +1,41 @@
 ############################################################################################################
-# SingleCellAnalyst.org
+# Ursa R Package
 # Phecda: CyTOF
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
-#' @importFrom plot3D jet2.col
+#' @importFrom ComplexHeatmap
+#' @importFrom cowplot
+#' @importFrom data.table
+#' @importFrom dplyr
 #' @importFrom ggplot2
-#' @importFrom ggpubr ggboxplot
-#' @importFrom Rtsne Rtsne
-#' @importFrom umap umap
-#' @importFrom
-#' @importFrom
-#' @importFrom
+#' @importFrom ggpubr
+#' @importFrom ggrepel
+#' @importFrom ggridges
+#' @importFrom ggthemes
+#' @importFrom gplots
+#' @importFrom gridExtra
+#' @importFrom HGNChelper
+#' @importFrom patchwork
+#' @importFrom plot3D
+#' @importFrom plyr
+#' @importFrom RColorBrewer
+#' @importFrom reshape2
+#' @importFrom scales
+#' @importFrom tidyverse
+#' @importFrom viridis
+#' @importFrom akmedoids
+#' @importFrom Biobase
+#' @importFrom ConsensusClusterPlus
+#' @importFrom flowCore
+#' @importFrom FlowSOM
+#' @importFrom flowWorkspace
+#' @importFrom ggcyto
+#' @importFrom limma
+#' @importFrom openCyto
+#' @importFrom Rtsne
+#' @importFrom umap
 #'
 NULL
 
