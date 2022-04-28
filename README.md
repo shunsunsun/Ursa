@@ -18,7 +18,7 @@ Seven single-cell omics include:
 
 Ursa can be installed in R via the command:
 ```sh
-devtools::install_github('cole-trapnell-lab/monocle3')
+devtools::install_github('eudoraleer/Ursa')
 ```
 
 ## Running single-cell analysis with Ursa
