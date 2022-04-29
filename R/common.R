@@ -244,13 +244,13 @@ violin_plot <- function(current, features, ncol = NULL, col, x_lab, log_status =
   return(p)
 }
 
-own_facet_scatter <- function(plotx, feature1, feature2, isfacet = T,
+own_facet_scatter <- function(plotx, feature1, feature2, isfacet = T,point_size = 0.9,
                               title, col=color_conditions$bright, color_by,
                               group_by = NULL, xlabel = feature1, ylabel = feature2,
                               strip_size = 15, legend_pos = "right", ncol = 2){
   # set.seed(2022)
   p <- ggplot(plotx, aes(x = plotx[,feature1], y = plotx[,feature2], color = plotx[,color_by])) +
-    geom_point(size = 0.9) +
+    geom_point(size = point_size) +
     scale_color_manual(values = gen_colors(col, length(unique(plotx[,color_by])))) +
     # scale_color_manual(values = sample(gen_colors(col, length(unique(plotx[,color_by]))), size = length(unique(plotx[,color_by])), replace = F)) +
     theme_classic() +
