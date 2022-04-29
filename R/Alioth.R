@@ -30,6 +30,7 @@
 #' @importFrom celltalker
 #' @importFrom DOSE
 #' @importFrom enrichplot
+#' @importFrom ensembldb
 #' @importFrom harmony
 #' @importFrom HGNChelper
 #' @importFrom htmlwidgets
