@@ -5,33 +5,33 @@
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-15
 ############################################################################################################
-#' @importFrom ComplexHeatmap
-#' @importFrom cowplot
-#' @importFrom data.table
-#' @importFrom dplyr
-#' @importFrom ggplot2
-#' @importFrom ggpubr
-#' @importFrom ggrepel
-#' @importFrom ggridges
-#' @importFrom ggthemes
-#' @importFrom gplots
-#' @importFrom gridExtra
-#' @importFrom HGNChelper
-#' @importFrom patchwork
-#' @importFrom plot3D
-#' @importFrom plyr
-#' @importFrom RColorBrewer
-#' @importFrom reshape2
-#' @importFrom scales
-#' @importFrom tidyverse
-#' @importFrom viridis
-#' @importFrom adegenet
-#' @importFrom ape
-#' @importFrom fastcluster
-#' @importFrom GenomicRanges
-#' @importFrom ggtree
-#' @importFrom intervalaverage
-#' @importFrom umap
+#' @import ComplexHeatmap
+#' @import cowplot
+#' @import data.table
+#' @import dplyr
+#' @import ggplot2
+#' @import ggpubr
+#' @import ggrepel
+#' @import ggridges
+#' @import ggthemes
+#' @import gplots
+#' @import gridExtra
+#' @import HGNChelper
+#' @import patchwork
+#' @import plot3D
+#' @import plyr
+#' @import RColorBrewer
+#' @import reshape2
+#' @import scales
+#' @import tidyverse
+#' @import viridis
+#' @import adegenet
+#' @import ape
+#' @import fastcluster
+#' @import GenomicRanges
+#' @import ggtree
+#' @import intervalaverage
+#' @import umap
 #'
 NULL
 

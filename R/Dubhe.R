@@ -5,35 +5,35 @@
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-17
 ############################################################################################################
-#' @importFrom ComplexHeatmap
-#' @importFrom cowplot
-#' @importFrom data.table
-#' @importFrom dplyr
-#' @importFrom ggplot2
-#' @importFrom ggpubr
-#' @importFrom ggrepel
-#' @importFrom ggridges
-#' @importFrom ggthemes
-#' @importFrom gplots
-#' @importFrom gridExtra
-#' @importFrom HGNChelper
-#' @importFrom patchwork
-#' @importFrom plot3D
-#' @importFrom plyr
-#' @importFrom RColorBrewer
-#' @importFrom reshape2
-#' @importFrom scales
-#' @importFrom tidyverse
-#' @importFrom viridis
-#' @importFrom celldex
-#' @importFrom circlize
-#' @importFrom ggalluvial
-#' @importFrom harmony
-#' @importFrom immunarch
-#' @importFrom scRepertoire
-#' @importFrom Seurat
-#' @importFrom SingleR
-#' @importFrom vegan
+#' @import ComplexHeatmap
+#' @import cowplot
+#' @import data.table
+#' @import dplyr
+#' @import ggplot2
+#' @import ggpubr
+#' @import ggrepel
+#' @import ggridges
+#' @import ggthemes
+#' @import gplots
+#' @import gridExtra
+#' @import HGNChelper
+#' @import patchwork
+#' @import plot3D
+#' @import plyr
+#' @import RColorBrewer
+#' @import reshape2
+#' @import scales
+#' @import tidyverse
+#' @import viridis
+#' @import celldex
+#' @import circlize
+#' @import ggalluvial
+#' @import harmony
+#' @import immunarch
+#' @import scRepertoire
+#' @import Seurat
+#' @import SingleR
+#' @import vegan
 #'
 NULL
 
