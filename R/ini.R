@@ -1,5 +1,4 @@
 #' @keywords ini
-#' @importFrom ggthemes
 
 time_ini <- function(){
   x <- format(Sys.time(), format = "%Y%m%d%H%M%S")

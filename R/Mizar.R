@@ -39,7 +39,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification Spatial
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_Spatial' by default.
+#' @param project_name Project name. 'Ursa_Spatial' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -49,7 +49,7 @@ NULL
 #' files.
 #' @export
 #'
-SpatialPip <- function(project_name = "Polaris_Spatial",
+SpatialPip <- function(project_name = "Ursa_Spatial",
                      input_dir = "./",
                      output_dir = "./",
                      pheno_file){

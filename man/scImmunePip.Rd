@@ -5,7 +5,7 @@
 \title{Run a post-quantification 10X technology-format scImmune Profiling pipeline}
 \usage{
 scImmunePip(
-  project_name = "Polaris_scImmune",
+  project_name = "Ursa_scImmune",
   input_dir = "./",
   output_dir = "./",
   pheno_file,
@@ -14,7 +14,7 @@ scImmunePip(
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_scImmune' by default.}
+\item{project_name}{Project name. 'Ursa_scImmune' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}

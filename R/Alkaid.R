@@ -50,7 +50,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification scATAC
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_scATAC' by default.
+#' @param project_name Project name. 'Ursa_scATAC' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -60,7 +60,7 @@ NULL
 #' files.
 #' @export
 #'
-scATACPip <- function(project_name = "Polaris_scATAC",
+scATACPip <- function(project_name = "Ursa_scATAC",
                        input_dir = "./",
                        output_dir = "./",
                        pheno_file){

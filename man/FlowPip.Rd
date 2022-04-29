@@ -5,14 +5,14 @@
 \title{Run a post-quantification 10X technology-format Flow Cytometry pipeline}
 \usage{
 FlowPip(
-  project_name = "Polaris_Flow",
+  project_name = "Ursa_Flow",
   input_dir = "./",
   output_dir = "./",
   pheno_file
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_Flow' by default.}
+\item{project_name}{Project name. 'Ursa_Flow' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}

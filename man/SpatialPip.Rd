@@ -5,14 +5,14 @@
 \title{Run a post-quantification 10X technology-format Spatial Transcriptomics pipeline}
 \usage{
 SpatialPip(
-  project_name = "Polaris_Spatial",
+  project_name = "Ursa_Spatial",
   input_dir = "./",
   output_dir = "./",
   pheno_file
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_Spatial' by default.}
+\item{project_name}{Project name. 'Ursa_Spatial' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}

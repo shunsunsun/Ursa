@@ -5,14 +5,14 @@
 \title{Run a post-quantification 10X technology-format scATAC Transcriptomics pipeline}
 \usage{
 scATACPip(
-  project_name = "Polaris_scATAC",
+  project_name = "Ursa_scATAC",
   input_dir = "./",
   output_dir = "./",
   pheno_file
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_scATAC' by default.}
+\item{project_name}{Project name. 'Ursa_scATAC' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}

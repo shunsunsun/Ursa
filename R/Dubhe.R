@@ -45,7 +45,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification scImmune
 #' Profiling pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_scImmune' by default.
+#' @param project_name Project name. 'Ursa_scImmune' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -56,7 +56,7 @@ NULL
 #' @param integration_method Integration method for combining scRNASeq data.
 #' Default by harmony.
 #'
-scImmunePip <- function(project_name = "Polaris_scImmune",
+scImmunePip <- function(project_name = "Ursa_scImmune",
                      input_dir = "./",
                      output_dir = "./",
                      pheno_file,

@@ -5,7 +5,7 @@
 \title{Run a post-quantification 10X technology-format single-cell CNV (scCNV) pipeline}
 \usage{
 scCNVPip(
-  project_name = "Polaris_scCNV",
+  project_name = "Ursa_scCNV",
   input_dir = "./",
   output_dir = "./",
   pheno_file,
@@ -15,7 +15,7 @@ scCNVPip(
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_scCNV' by default.}
+\item{project_name}{Project name. 'Ursa_scCNV' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by default.}
 

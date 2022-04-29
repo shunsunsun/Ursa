@@ -49,7 +49,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification Flow
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_Flow' by default.
+#' @param project_name Project name. 'Ursa_Flow' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -59,7 +59,7 @@ NULL
 #' files.
 #' @export
 #'
-FlowPip <- function(project_name = "Polaris_Flow",
+FlowPip <- function(project_name = "Ursa_Flow",
                      input_dir = "./",
                      output_dir = "./",
                      pheno_file){

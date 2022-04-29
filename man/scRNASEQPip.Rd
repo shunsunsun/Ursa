@@ -5,16 +5,19 @@
 \title{Run a post-quantification 10X technology-format scRNASEQ pipeline}
 \usage{
 scRNASEQPip(
-  project_name = "Polaris_scRNASEQ",
+  project_name = "Ursa_scRNASEQ",
   input_dir = "./",
   output_dir = "./",
   pheno_file,
+  num_genes_lower_bound = 200,
+  num_genes_upper_bound = 25000,
+  mito_cutoff = 5,
   integration_method = "Seurat",
   cc_regression = 0
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_scRNASEQ' by default.}
+\item{project_name}{Project name. 'Ursa_scRNASEQ' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}
@@ -25,6 +28,12 @@ created under the specified output directory.}
 
 \item{pheno_file}{Meta data file directory. Accept only .csv/.txt format
 files.}
+
+\item{num_genes_lower_bound}{Lower bound to select for cells with number of genes more than this value. Default is 200.}
+
+\item{num_genes_upper_bound}{Upper bound to select for cells with number of genes less than or equals to this value Default is 25000.}
+
+\item{mito_cutoff}{Threshold percentage to select for cells with percentage of mitochondria genes less than this value. This is remove cells which are debris or artefacts and doublets. Default is 5.}
 
 \item{integration_method}{Integration method. Accepts 'Seurat' or "Harmony'
 integration. Default is Seurat.}

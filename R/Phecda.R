@@ -47,7 +47,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification CyTOF
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_CyTOF' by default.
+#' @param project_name Project name. 'Ursa_CyTOF' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -57,7 +57,7 @@ NULL
 #' files.
 #' @export
 #'
-CyTOFPip <- function(project_name = "Polaris_CyTOF",
+CyTOFPip <- function(project_name = "Ursa_CyTOF",
                     input_dir = "./",
                     output_dir = "./",
                     pheno_file){

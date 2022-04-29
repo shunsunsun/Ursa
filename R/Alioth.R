@@ -50,7 +50,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification scRNASEQ
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_scRNASEQ' by default.
+#' @param project_name Project name. 'Ursa_scRNASEQ' by default.
 #' @param input_dir Directory to all input files. Current working directory by
 #' default.
 #' @param output_dir Output directory. Current working directory by default.
@@ -58,6 +58,9 @@ NULL
 #' created under the specified output directory.
 #' @param pheno_file Meta data file directory. Accept only .csv/.txt format
 #' files.
+#' @param num_genes_lower_bound Lower bound to select for cells with number of genes more than this value. Default is 200.
+#' @param num_genes_upper_bound Upper bound to select for cells with number of genes less than or equals to this value Default is 25000.
+#' @param mito_cutoff Threshold percentage to select for cells with percentage of mitochondria genes less than this value. This is remove cells which are debris or artefacts and doublets. Default is 5.
 #' @param integration_method Integration method. Accepts 'Seurat' or "Harmony'
 #' integration. Default is Seurat.
 #' @param cc_regression Cell cycle regression method. Accepts 0 for no regression,
@@ -65,10 +68,14 @@ NULL
 #' Default is 0.
 #' @export
 #'
-scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
+
+scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                       input_dir = "./",
                       output_dir = "./",
                       pheno_file,
+                      num_genes_lower_bound = 200,
+                      num_genes_upper_bound = 25000,
+                      mito_cutoff = 5,
                       integration_method = "Seurat",
                       cc_regression = 0){
   print("Initialising pipeline environment..")
@@ -132,9 +139,11 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       p3 <- own_violin(plotx, feature = "Percent_Mito", plotx_title = "Mitochondria Percent / Cell", col = color_conditions$tenx[3], title.size = 18)
       p <- p1+p2+p3
     }else{p <- p1+p2}
-    results[['p1plots']][[j]] <- p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-    names(results[['p1plots']])[j] <- pheno_data[j,"SID"]
 
+    somePDFPath <- paste(cdir,"1URSA_PLOT_PREFILTERING_RNA_INFO_VIOLIN_",pheno_data[j,"SID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=14, height=8,pointsize=10)
+    print(p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
     p1 <- NULL
     p2 <- NULL
@@ -150,8 +159,10 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
         p <- p1+p2
       }
 
-    results[['p2plots']][[j]] <- p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5)))
-    names(results[['p2plots']])[j] <- pheno_data[j,"SID"]
+    somePDFPath <- paste(cdir,"2URSA_PLOT_PREFILTERING_RNA_INFO_SCATTERED_",pheno_data[j,"SID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=5,pointsize=12)
+    print(p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5))))
+    dev.off()
 
     data_current[[j]] <- NormalizeData(data_current[[j]], verbose = TRUE)
     data_current[[j]]@assays$RNA@data@x[is.na(data_current[[j]]@assays$RNA@data@x)] <- 0
@@ -185,8 +196,11 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       # G2/M and S Phase Markers: Tirosh et al, 2015
       p1 <- own_2d_scatter(data_current[[j]], "pca", "Phase", "PCA Based on Variable Features")
       p2 <- own_2d_scatter(data_current[[j]], "pca_selected", "Phase", "PCA Based on G2/M and S Phase Markers")
-      results[['p3plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p3plots']])[j] <- pheno_data[j,"SID"]
+
+      somePDFPath = paste(cdir,"3URSA_PLOT_CELL_CYCLE_PHASES_PCA_BEFORE_CC_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+      print(p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
       data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
       data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
@@ -194,8 +208,11 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
 
       p1 <- own_2d_scatter(data_current[[j]], "umap", "Phase", "UMAP Based on Variable Features")
       p2 <- own_2d_scatter(data_current[[j]], "umap_selected", "Phase", "UMAP Based on G2/M and S Phase Markers")
-      results[['p4plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p4plots']])[j] <- pheno_data[j,"SID"]
+
+      somePDFPath = paste(cdir,"4URSA_PLOT_CELLCYCLE_UMAP_BEFORE_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+      print(p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
     }else{
       data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
@@ -204,20 +221,22 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
 
     metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
-    results[['p5plots']][[j]] <- FeaturePlot(data_current[[j]],
-                                             reduction = "umap",
-                                             features = metrics,
-                                             pt.size = 0.4,
-                                             order = TRUE,
-                                             min.cutoff = 'q10',
-                                             label = FALSE, cols = c("green","blue"))+
-      plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""),
-                      theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-    names(results[['p5plots']])[j] <- pheno_data[j,"SID"]
+    somePDFPath = paste(cdir,"5URSA_PLOT_CELL_CYCLE_PHASES_UMAP_BEFORE_CC_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=ceiling(length(metrics))/3*5,pointsize=12)
+    print(FeaturePlot(data_current[[j]],
+                      reduction = "umap",
+                      features = metrics,
+                      pt.size = 0.05,
+                      order = TRUE,
+                      min.cutoff = 'q10',
+                      label = FALSE)+
+            plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""),
+                            theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
     ########################################################################################################################
     # Filtering
-    data_current[[j]] <- subset(data_current[[j]], subset = nFeature_RNA > 200 & nFeature_RNA <= 25000 & Percent_Mito < 5)
+    data_current[[j]] <- subset(data_current[[j]], subset = nFeature_RNA > num_genes_lower_bound & nFeature_RNA <= num_genes_upper_bound & Percent_Mito < mito_cutoff)
     if(ncol(data_current[[j]]) > 200){
 
       data_current[[j]] <- NormalizeData(data_current[[j]], verbose = TRUE)
@@ -263,14 +282,6 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
         }
 
         data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
-
-        p1 <- DimPlot(data_current[[j]], reduction = "pca", split.by = "Phase", cols = color_conditions$bright) +
-          ggtitle(paste("PCA Based on Variable Features", sep = ""))+
-          theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
-        p2 <- DimPlot(data_current[[j]], reduction = "pca_selected", split.by = "Phase", cols = color_conditions$bright) +
-          ggtitle(paste("PCA Based on G2/M and S Phase Markers", sep = ""))+
-          theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
-
         data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
         data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
         data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
@@ -286,9 +297,10 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
           ggtitle(paste("PCA Based on G2/M and S Phase Markers", sep = "")) +
           theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
 
-        # G2/M and S Phase Markers: Tirosh et al, 2015
-        results[['p6plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-        names(results[['p6plots']])[j] <- pheno_data[j,"SID"]
+        somePDFPath = paste(cdir,"6URSA_PLOT_CELL_CYCLE_PHASES_PCA_POST_CC_",gsub("\\s+","_",toupper(cc_type)),"_REGRESSION_", annot_names[j], "_", project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+        print(p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+        dev.off()
 
         p1 <- NULL
         p2 <- NULL
@@ -296,19 +308,24 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
           ggtitle(paste("UMAP Based on Variable Features", sep = "")) + theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
         p2 <- DimPlot(data_current[[j]], reduction = "umap_selected", cols = color_conditions$tenx, split.by = "Phase") +
           ggtitle(paste("UMAP Based on G2/M and S Phase Markers", sep = "")) + theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5))
-        results[['p7plots']][[j]] <- p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-        names(results[['p7plots']])[j] <- pheno_data[j,"SID"]
 
-        results[['p8plots']][[j]] <- FeaturePlot(data_current[[j]],
-                                                 reduction = "umap",
-                                                 features = metrics,
-                                                 pt.size = 0.4,
-                                                 order = TRUE,
-                                                 min.cutoff = 'q10',
-                                                 label = FALSE, cols = c("green","blue"))+
-          plot_annotation(title = paste("UMAP Post Cell Cycle Regression - ",annot_names[j], sep = ""),
-                          theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5)))
-        names(results[['p8plots']])[j] <- pheno_data[j,"SID"]
+        somePDFPath = paste(cdir,"7URSA_PLOT_CELLCYCLE_UMAP_POST_CC_",gsub("\\s+","_",toupper(cc_type)),"_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+        print(p1 / p2 + plot_annotation(title = paste("Post Cell Cycle Regression: ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+        dev.off()
+
+        somePDFPath = paste(cdir,"8URSA_PLOT_CELL_CYCLE_PHASES_UMAP_POST_CC_",gsub("\\s+","_",toupper(cc_type)),"_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=10, height=ceiling(length(metrics))/3*5,pointsize=12)
+        print(FeaturePlot(data_current[[j]],
+                          reduction = "umap",
+                          features = metrics,
+                          pt.size = 0.05,
+                          order = TRUE,
+                          min.cutoff = 'q10',
+                          label = FALSE)+
+                plot_annotation(title = paste("UMAP Post Cell Cycle Regression - ",annot_names[j], sep = ""),
+                                theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5))))
+        dev.off()
 
       }else{
         DefaultAssay(data_current[[j]]) <- 'RNA'
@@ -317,30 +334,24 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
 
         metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
-        results[['p8plots']][[j]] <- FeaturePlot(data_current[[j]],
-                                                 reduction = "umap",
-                                                 features = metrics,
-                                                 pt.size = 0.4,
-                                                 order = TRUE,
-                                                 min.cutoff = 'q10',
-                                                 label = FALSE, cols = c("green","blue"))+
-          plot_annotation(title = paste("UMAP Features - ",annot_names[j], sep = ""),
-                          theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5)))
-        names(results[['p8plots']])[j] <- pheno_data[j,"SID"]
-
-      }
+        somePDFPath = paste(cdir,"8URSA_PLOT_NO_CELL_CYCLE_REGRESSION_UMAP_POST_CC_",gsub("\\s+","_",toupper(cc_type)),"_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=10, height=ceiling(length(metrics))/3*5,pointsize=12)
+        print(FeaturePlot(data_current[[j]],
+                          reduction = "umap",
+                          features = metrics,
+                          pt.size = 0.05,
+                          order = TRUE,
+                          min.cutoff = 'q10',
+                          label = FALSE)+
+                plot_annotation(title = paste("UMAP Features - ",annot_names[j], sep = ""),
+                                theme = theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5))))
+        dev.off()
+}
 
       colnames(data_current[[j]]@assays$RNA@counts) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@counts))
       colnames(data_current[[j]]@assays$RNA@data) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@data))
       colnames(data_current[[j]]@assays$RNA@scale.data) <- gsub("_|-|\\s+|\\t","",colnames(data_current[[j]]@assays$RNA@scale.data))
       row.names(data_current[[j]]@meta.data) <- gsub("_|-|\\s+|\\t","",row.names(data_current[[j]]@meta.data))
-
-      # if(length(h5_files) > 0){
-      #   SCTRANS <- TRUE
-      #   current <- suppressWarnings(SCTransform(data_current[[j]], verbose = FALSE))
-      # }else{
-      #   SCTRANS <- FALSE
-      # }
 
       plotx <- data_current[[j]]@meta.data
       colnames(plotx)[grep("orig.ident", colnames(plotx), ignore.case = T)] <- "SAMPLE_ID"
@@ -356,8 +367,11 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       }else{
         p <- p1+p2
       }
-      results[['p9plots']][[j]] <- p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p9plots']])[j] <- pheno_data[j,"SID"]
+
+      somePDFPath = paste(cdir,"9URSA_PLOT_POSTFILTERING_RNA_INFO_VIOLIN_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=14, height=8,pointsize=10)
+      print(p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
       p2 <- own_feature(plotx, feature1 = "nCount_RNA", feature2 = "nFeature_RNA",
                         title_name = annot_names[j], col = color_conditions$tenx[5],
@@ -371,31 +385,43 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
         p <- p2
       }
 
-      results[['p9plots']][[j]] <- p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
-      names(results[['p9plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"10URSA_PLOT_POSTFILTERING_RNA_INFO_SCATTERED_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=5,pointsize=12)
+      print(p + plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
+      dev.off()
 
       n <- 10
       p1 <- NULL
       p2 <- NULL
       p1 <- VariableFeaturePlot(data_current[[j]], cols = color_conditions$bright[1:2])
       p2 <- LabelPoints(plot = p1, points = VariableFeatures(data_current[[j]])[1:n], repel = TRUE, xnudge = 0, ynudge = 0)
-      results[['p11plots']][[j]] <- p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
-      names(results[['p11plots']])[j] <- pheno_data[j,"SID"]
 
-      results[['p12plots']][[j]] <- VizDimLoadings(data_current[[j]], dims = 1:2, reduction = "pca",
-                                                   col = color_conditions$manycolors[1])+
-        plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
-      names(results[['p12plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"11URSA_PLOT_POSTNORMALIZED_VARIABLE_FEATURE_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+      print(p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
+      dev.off()
+
+      somePDFPath = paste(cdir,"12URSA_PLOT_TOP_FEATURES_ASSOC_PC12_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=6,pointsize=12)
+      print(VizDimLoadings(data_current[[j]], dims = 1:2, reduction = "pca",
+                           col = color_conditions$manycolors[1])+
+              plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
+      dev.off()
 
       Idents(data_current[[j]]) <- "orig.ident"
       data_current[[j]] <- RunPCA(data_current[[j]])
-      results[['p13plots']][[j]] <- DimPlot(data_current[[j]], reduction = "pca",cols = color_conditions$tenx) + theme(legend.position = "none")+
-        plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p13plots']])[j] <- pheno_data[j,"SID"]
 
-      results[['p14plots']][[j]] <- DimHeatmap(data_current[[j]], dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE, assays = "RNA")+
-        plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p14plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"13SCA_PLOT_VISUALIZE_PC12_", annot_names[j], "_", project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=8, height=6,pointsize=12)
+      print(DimPlot(data_current[[j]], reduction = "pca",cols = color_conditions$tenx) + theme(legend.position = "none")+
+              plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
+
+      somePDFPath = paste(cdir,"14SCA_PLOT_HEATMAP_PC1_TOP_FEATURES_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=8, height=16,pointsize=12)
+      print(DimHeatmap(data_current[[j]], dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE, assays = "RNA")+
+              plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
       data_current[[j]] <- FindNeighbors(data_current[[j]], dims = 1:ifelse(ncol(data_current[[j]]) > 30, 30, ncol(data_current[[j]])))
       data_current[[j]] <- FindClusters(data_current[[j]], resolution = 0.8)
@@ -415,19 +441,25 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       p2 <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CLUSTER", plot_title = "tSNE",point_size = 1,
                          col = color_conditions$colorful, annot = TRUE, legend_position = "right", numeric = TRUE)
 
-      results[['p15plots']][[j]] <- p1+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p15plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"15URSA_PLOT_UMAP_AUTOCLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=9, height=7,pointsize=12)
+      print(p1+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
-      results[['p16plots']][[j]] <- p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p16plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"16URSA_PLOT_TSNE_AUTOCLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=9, height=7,pointsize=12)
+      print(p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
 
       current_clusters <- sort(as.numeric(as.character(unique(plotx$CLUSTER))))
       Idents(data_current[[j]]) <- "seurat_clusters"
       current_out <- NULL
       current_out <- deanalysis(data_current[[j]], current_clusters, plot_title = annot_names[j],group=NULL,de_analysis = "findallmarkers")
+
+      current_data_markers <- data.frame(SAMPLE = annot_names[j], current_out$current_data_markers[order(current_out$current_data_markers$p_val_adj, decreasing = F),])
+      write.table(current_data_markers, paste(cdir, "17URSA_TABLE_DEGS_NO_FILTER_",annot_names[j],"_",project_name,".txt", sep = ""), quote = F, row.names = F, sep = "\t")
+
       current_data_markers <- NULL
-      results[['p17data']][[j]] <- current_out$current_data_markers
-      names(results[['p17data']])[j] <- pheno_data[j,"SID"]
       de_type <- current_out$de_type
       de_name <- current_out$de_name
       top1 <- current_out$top1
@@ -438,8 +470,11 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       plot_median <- current$plot_median
       top_markers <- current$top_markers
 
-      results[['p18plots']][[j]] <- complex_heatmap(plot_median, col = color_conditions$BlueYellowRed)
-      names(results[['p18plots']])[j] <- pheno_data[j,"SID"]
+      plot_median[is.na(plot_median)] <- 0
+      somePDFPath = paste(cdir,"18URSA_PLOT_HEATMAP_MEDIAN_EXPR_CLUSTER_TOP_", n, "_GENES_", annot_names[j], "_",project_name, ".pdf", sep = "")
+      pdf(file=somePDFPath, width=6, height=9,pointsize=12)
+      print(complex_heatmap(plot_median, col = color_conditions$BlueYellowRed))
+      dev.off()
 
       #################################### TOP MARKERS + TSNE / UMAP ###################################################################
       wt <- colnames(current_out$current_data_markers)[grep("log.*FC", colnames(current_out$current_data_markers), ignore.case = T)]
@@ -470,48 +505,58 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
                          plot_title = annot_names[j],col = ccolors,numeric = T,
                          annot = T, legend_position = "right", point_size = 1)
 
-      results[['p19plots']][[j]] <- p1
-      names(results[['p19plots']])[j] <- pheno_data[j,"SID"]
-      results[['p192plots']][[j]] <- p2
-      names(results[['p192plots']])[j] <- pheno_data[j,"SID"]
-      results[['p193plots']][[j]] <- p3
-      names(results[['p193plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"19URSA_PLOT_AVE_LOGFC_TOP_GENES_TSNE_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=16, height=7,pointsize=10)
+      grid.arrange(p1, p2, ncol = 2)
+      dev.off()
 
-      # grid.arrange(p1, p2, ncol = 2)
-      # grid.arrange(p1, p3, ncol = 2)
+      somePDFPath = paste(cdir,"20URSA_PLOT_AVE_LOGFC_TOP_GENES_UMAP_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=16, height=7,pointsize=10)
+      grid.arrange(p1, p3, ncol = 2)
+      dev.off()
 
       top_1_markers <- current_out$current_data_markers %>% group_by(cluster) %>% top_n(n = 1, eval(parse(text = wt)))
-      results[['p20plots']][[j]] <- RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 4,
-                                              cols = ccolors)+
-        plot_annotation(title = paste("TOP1: ", annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p20plots']])[j] <- pheno_data[j,"SID"]
 
-      results[['p21plots']][[j]] <- current_out$featureplot +plot_layout(ncol = 4) +
-        plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-      names(results[['p21plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"21URSA_PLOT_RIDGE_TOP_FC_SIG_GENES_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=14, height=length(unique(unlist(top_1_markers$gene)))/4*6,pointsize=10)
+      print(RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 4,
+                      cols = ccolors)+
+              plot_annotation(title = paste("TOP1: ", annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
+
+      somePDFPath = paste(cdir,"22URSA_PLOT_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=10)
+      print(current_out$featureplot +plot_layout(ncol = 4) +
+              plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
+
+      somePDFPath = paste(cdir,"23URSA_PLOT_VIOLIN_TOP_",n,"_MARKERS_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=16, height=10,pointsize=10)
 
       for(k in 1:length(current_clusters)){
         current <- topn[which(topn$cluster == current_clusters[k]),]
         current <- current[order(current$p_val_adj, decreasing = F),]
-        results[['p22plots']][[length(results[['p22plots']])+1]] <- VlnPlot(data_current[[j]], features = current$gene, pt.size = 0,
-                                                                            ncol = 4, cols = ccolors)&
-          xlab("CLUSTERS")&
-          plot_annotation(title = paste("TOP",n," IN CLUSTER ", current_clusters[k],": ",current_out$de_name, annot_names[j],  sep = ""),
-                          theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
-        names(results[['p22plots']])[length(results[['p22plots']])] <- paste("CLUSTER_",current_clusters[k],"|",pheno_data[j,"SID"], sep = "")
+        print(VlnPlot(data_current[[j]], features = current$gene, pt.size = 0,
+                      ncol = 4, cols = gen_colors(color_conditions$colorful,length(unique(data_current[[j]]$seurat_clusters))))&
+                xlab("CLUSTERS")&
+                plot_annotation(title = paste("TOP",n,": ",current_out$de_name, annot_names[j], " - CLUSTER ", current_clusters[k], sep = ""),
+                                theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold"))))
       }
+      dev.off()
 
-      results[['p23plots']][[j]] <- DoHeatmap(data_current[[j]], features = topn$gene,
-                                              group.colors = ccolors, size = 8) +
-        ggtitle(annot_names[j])+
-        NoLegend()+theme(axis.text.x = element_blank(),
-                         axis.text.y = element_text(size = 10),
-                         axis.title.x = element_blank(),
-                         axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
-                         legend.title = element_blank(),
-                         legend.text = element_text(size = 15),
-                         plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
-      names(results[['p23plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"24URSA_PLOT_HEATMAP_TOP_",n,"_MARKERS_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=length(unique(topn$gene))*0.1,pointsize=10)
+      print(DoHeatmap(data_current[[j]], features = topn$gene,
+                      group.colors = ccolors, size = 8) +
+              ggtitle(annot_names[j])+
+              NoLegend()+theme(axis.text.x = element_blank(),
+                               axis.text.y = element_text(size = 10),
+                               axis.title.x = element_blank(),
+                               axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                               legend.title = element_blank(),
+                               legend.text = element_text(size = 15),
+                               plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+      dev.off()
 
       Idents(data_current[[j]]) <- "seurat_clusters"
       DefaultAssay(data_current[[j]]) <- "RNA"
@@ -529,8 +574,13 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data_current[[j]])),
                          clusters =data_current[[j]]$seurat_clusters,
                          ref = hpca.se, assay.type.test=1,
-                         labels = hpca.se$label.main)
+                         labels = hpca.se$label.fine)
       data_current[[j]]$CELL_TYPE <- clu_ann$labels[match(data_current[[j]]$seurat_clusters,row.names(clu_ann))]
+      clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data_current[[j]])),
+                         clusters =data_current[[j]]$seurat_clusters,
+                         ref = hpca.se, assay.type.test=1,
+                         labels = hpca.se$label.main)
+      data_current[[j]]$CELL_TYPE_LEVEL2 <- clu_ann$labels[match(data_current[[j]]$seurat_clusters,row.names(clu_ann))]
       data_current[[j]]@meta.data[which(is.na(data_current[[j]]$CELL_TYPE)),"CELL_TYPE"] <- "Unidentifiable"
       if(length(grep("ENSG[0-9]+",row.names(data_current)[j], ignore.case = T)) > nrow(data_current[[j]])/2){
         row.names(data_current[[j]]@assays$RNA@counts) <- orig_gene_names
@@ -539,19 +589,24 @@ scRNASEQPip <- function(project_name = "Polaris_scRNASEQ",
       }
 
       Idents(data_current[[j]]) <- data_current[[j]]$CELL_TYPE
-      plotx <- gen10x_plotx(data_current[[j]])
-      plotx$CELL_TYPE <- data_current[[j]]$CELL_TYPE
+      plotx <- gen10x_plotx(data_current[[j]], include_meta = T)
+
+      write.table(plotx, paste(cdir, "25URSA_TABLE_UMAP_TSNE_PCA_COORDINATES_CLUSTERS_",annot_names[j],"_",project_name,".txt", sep = ""), quote = F, row.names = F, sep = "\t")
 
       cct_colors <- gen_colors(color_conditions$tenx,length(unique(plotx$CELL_TYPE)))
       names(cct_colors) <- sort(unique(plotx$CELL_TYPE))
 
-      results[['p24plots']][[j]] <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = annot_names[j],
-                                                 col = cct_colors, annot = TRUE, legend_position = "right", point_size = 1)
-      names(results[['p24plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"26URSA_PLOT_UMAP_AUTO_CELL_TYPE_IDENTIFICATION_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=9, height=6,pointsize=12)
+      print(plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = annot_names[j],
+                         col = cct_colors, annot = TRUE, label_size = 3, legend_position = "right", point_size = 0.1, legendsize = 10))
+      dev.off()
 
-      results[['p25plots']][[j]] <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CELL_TYPE", plot_title = annot_names[j],
-                                                 col = cct_colors, annot = TRUE, legend_position = "right", point_size = 1)
-      names(results[['p25plots']])[j] <- pheno_data[j,"SID"]
+      somePDFPath = paste(cdir,"27URSA_PLOT_TSNE_AUTO_CELL_TYPE_IDENTIFICATION_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=9, height=6,pointsize=12)
+      print(plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CELL_TYPE", plot_title = annot_names[j],
+                         col = cct_colors, annot = TRUE, label_size = 3, legend_position = "right", point_size = 0.1, legendsize = 10))
+      dev.off()
 
       ################ Pathway Analysis #########################################################################
       n <- 500

@@ -1,5 +1,4 @@
 #' @keywords common
-#' @importFrom ggplot2
 
 plot_ploidy <- function(results, output_dir){
   data <- results@data
@@ -387,4 +386,286 @@ own_violin <- function(plotx, x = "SAMPLE_ID", feature, plotx_title, col = NULL,
   }
 
   return(p)
+}
+
+own_feature <- function(plotx, feature1, feature2, title_name, col, xlabel, ylabel){
+  p <- ggplot(plotx, aes(plotx[,feature1], plotx[,feature2], color = SAMPLE_ID))+
+    geom_point()+theme_classic()+
+    scale_color_manual(values = gen_colors(col, length(unique(plotx[,"SAMPLE_ID"])))) +
+    stat_cor() +
+    xlab(xlabel)+ylab(ylabel)+ # ggtitle(title_name)+
+    theme(legend.position = "none", axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          axis.title.x = element_text(size = 15, margin=margin(10,0,0,0)),
+          axis.title.y = element_text(size = 15, margin=margin(0,10,0,0)),
+          plot.margin=unit(c(1,1,1,1),"cm"))
+  # plot.title = element_text(size = title.size, face = "bold", hjust = 0.5))
+  return(p)
+}
+
+own_2d_scatter <- function(current_data, reduction_method, split_var, plot_title){
+  p <- DimPlot(current_data, reduction = reduction_method,split.by = split_var, cols = color_conditions$bright) +
+    ggtitle(paste(plot_title, sep = "")) +
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          strip.text = element_text(size = 15),
+          legend.title = element_text(size = 15),
+          legend.text = element_text(size = 15),
+          legend.key.size = unit(1.2, "cm"),
+          axis.text.x = element_text(size = 15),
+          axis.text.y = element_text(size = 15),
+          axis.title.x = element_text(size = 15, margin=margin(10,0,0,0)),
+          axis.title.y = element_text(size = 15, margin=margin(0,10,0,0)))
+  return(p)
+}
+
+deanalysis <- function(data, current_clusters, plot_title,group=NULL,
+                       de_analysis = "findallmarkers", n=10, cluster_name = "seurat_clusters"){
+
+  DefaultAssay(data) <- "RNA"
+  Idents(data) <- cluster_name
+  out <- NULL
+  current_data_markers <- NULL
+  p_thresh <- 0.05
+  # fc_threshold <- 1.25
+  current_clusters <- sort(as.numeric(as.character(unique(current_clusters))), decreasing = F)
+  top1 <- NULL
+  topn <- NULL
+
+  if(toupper(de_analysis) == toupper("findallmarkers")){
+    de_type <- "TOP_DEGENES_IN_CLUSTERS"
+    de_name <- ""
+    current_data_markers <- FindAllMarkers(data, min.pct = 0.5, logfc.threshold = 0.25)
+    current_data_markers <- current_data_markers[current_data_markers$p_val_adj < p_thresh,]
+    current_data_markers <- current_data_markers[order(current_data_markers$p_val_adj, decreasing = F),]
+
+    wt <- colnames(current_data_markers)[grep("log.*FC", colnames(current_data_markers), ignore.case = T)]
+    # temp <- current_data_markers[current_data_markers[,wt] > fc_threshold,]
+    top1 <- choose_topn(current_data_markers, wt = wt, group = "cluster", n = 1, max = T)
+    # wt <- colnames(current_data_markers)[grep("p_val_adj", colnames(current_data_markers), ignore.case = T)]
+    # top1 <- rbind(top1,choose_topn(current_data_markers, wt = wt, group = "cluster", n = 1, max = F))
+    top1 <- top1[which(!is.na(top1$gene)),]
+    top1 <- unique(top1)
+
+    wt <- colnames(current_data_markers)[grep("log.*FC", colnames(current_data_markers), ignore.case = T)]
+    topn <- choose_topn(current_data_markers, wt = wt, group = "cluster", n = n, max = T)
+    # wt <- colnames(current_data_markers)[grep("p_val_adj", colnames(current_data_markers), ignore.case = T)]
+    # topn <- rbind(topn,choose_topn(current_data_markers, wt = wt, group = "cluster", n = n, max = F))
+    # topn <- unique(topn)
+
+    current_data_markers <- current_data_markers[order(current_data_markers$cluster, decreasing = F),]
+    top1 <- top1[order(top1$cluster, decreasing = F),]
+    top1 <- unique(top1)
+    topn <- topn[order(topn$cluster, decreasing = F),]
+    topn <- unique(topn)
+
+  }else if(toupper(de_analysis) == toupper("findconservedmarkers")){
+    de_type <- "TOP_CONSERVED_GENES_GROUPS_IN_CLUSTERS"
+    de_name <- "CONSERVED MARKERS: "
+
+    for(i in 1:length(current_clusters)){
+      if(min(table(data@meta.data[,group][Idents(data) == current_clusters[i]])) > 3){
+        print(i)
+        current <- FindConservedMarkers(data, ident.1 = current_clusters[i], grouping.var = group, verbose = FALSE)
+        current$gene <- row.names(current)
+        current$cluster <- current_clusters[i]
+        current <- current[current$minimump_p_val < p_thresh,]
+        if(nrow(current) > 0){
+          current_data_markers <- rbind(current_data_markers, current)
+          current_groups <- colnames(current)[grep("avg_log.*FC", colnames(current), ignore.case = T)]
+          top1 <- rbind(top1,current[unique(apply(current[,current_groups],2,function(x){which.max(x)})),])
+          for(m in 1:length(current_groups)){
+            topn <- rbind(topn,current[order(current[,current_groups[m]], decreasing = T),][1:n,])
+          }
+          # current_groups <- colnames(current)[grep("_p_val_adj", colnames(current), ignore.case = T)]
+          # top1 <- rbind(top1,current[unique(apply(current[,current_groups],2,function(x){which.min(x)})),])
+          # for(m in 1:length(current_groups)){
+          #   topn <- rbind(topn,current[order(current[,current_groups[m]], decreasing = F),][1:n,])
+          # }
+          top1 <- unique(top1)
+          topn <- unique(topn)
+        }
+      }
+    }
+    current_data_markers <- current_data_markers[order(current_data_markers$minimump_p_val, decreasing = F),]
+    top1 <- top1[order(top1$cluster, decreasing = F),]
+    top1 <- unique(top1)
+    topn <- topn[order(topn$cluster, decreasing = F),]
+    topn <- unique(topn)
+
+  }else if(toupper(de_analysis) == toupper("finddegroup")){
+    de_type <- "TOP_DE_GENES_GROUPS_WITHIN_EACH_CLUSTER"
+    de_name <- "DE BETWEEN GROUPS: "
+
+    for(i in 1:length(current_clusters)){
+      current <-  subset(data, idents = current_clusters[i])
+      if(min(table(current$GROUP)) > 3){
+        Idents(current) <- group
+        current_groups <- unique(current@meta.data[,group])
+        for(l in 1:length(current_groups)){
+          for(m in 1:length(current_groups)){
+            if(l != m){
+              current_result <- FindMarkers(current, ident.1 = current_groups[l], ident.2 = current_groups[m])
+              current_result <- current_result[current_result$p_val_adj < p_thresh,]
+              current_result <- current_result[order(current_result$p_val_adj, decreasing = F),]
+              current_result$gene <- row.names(current_result)
+              current_result$cluster <- current_clusters[i]
+              current_result$group1 <- current_groups[l]
+              current_result$group2 <- current_groups[m]
+
+              wt <- colnames(current_result)[grep("log.*FC", colnames(current_result), ignore.case = T)]
+              top1 <- rbind(top1, current_result[which.max(current_result[,wt]),])
+              # wt <- colnames(current_result)[grep("p_val_adj", colnames(current_result), ignore.case = T)]
+              # top1 <- rbind(top1, current_result[which.min(current_result[,wt]),])
+
+              wt <- colnames(current_result)[grep("log.*FC", colnames(current_result), ignore.case = T)]
+              current_result <- current_result[order(current_result[,wt], decreasing = T),]
+              topn <- rbind(topn, current_result[1:n,])
+              # wt <- colnames(current_result)[grep("p_val_adj", colnames(current_result), ignore.case = T)]
+              # current_result <- current_result[order(current_result[,wt], decreasing = F),]
+              # topn <- rbind(topn, current_result[1:n,])
+
+              top1 <- unique(top1)
+              topn <- unique(topn)
+              current_data_markers <- rbind(current_result, current_data_markers)
+            }
+          }
+        }
+      }
+    }
+    current_data_markers <- current_data_markers[order(current_data_markers$p_val_adj, decreasing = F),]
+    top1 <- top1[order(top1$cluster, decreasing = F),]
+    top1 <- unique(top1)
+    topn <- topn[order(topn$cluster, decreasing = F),]
+    topn <- unique(topn)
+  }
+
+  # findallmarkers
+  # findconservedmarkers
+  # finddegroup
+
+  out$current_data_markers <- current_data_markers
+  p <- NULL
+
+  DefaultAssay(data) <- "RNA"
+  for(k in 1:length(top1$gene)){
+    if(toupper(de_analysis) %in% c(toupper("finddegroup"), toupper("findconservedmarkers"))){
+      if(toupper(de_analysis) == toupper("finddegroup")){
+        extra_info <- paste(top1$group1[k], " VS ", top1$group2[k], sep = "")
+      }else{
+        extra_info <- ""
+      }
+      p[[k]] <- FeaturePlot(data, features = top1$gene[k], split.by = group,
+                            label = T, pt.size = 0.5, label.size = 6, max.cutoff = 'q95')+
+        plot_annotation(title = paste(extra_info,"\nCLUSTER ", top1$cluster[k], ", GENE: ",top1$gene[k],sep = ""),
+                        theme =
+                          theme(axis.text.x = element_text(size = 20),
+                                axis.text.y = element_text(size = 20),
+                                axis.title.x = element_text(size = 20, margin=margin(10,0,0,0)),
+                                axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                                legend.title = element_blank(),
+                                legend.text = element_text(size = 15),
+                                plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
+      if(toupper(de_analysis) == toupper("finddegroup")){
+        names(p)[k] <- paste("CLUSTER ",top1$cluster[k],": TOP GENE IN ", top1$group1[k],sep = "")
+      }else{
+        names(p)[k] <- top1$cluster[k]
+      }
+    }else{
+      extra_info <- ""
+      if(k == 1){
+        p <- FeaturePlot(data, features = top1$gene[k], split.by = group,
+                         label = T, pt.size = 0.5, label.size = 6, max.cutoff = 'q95')+
+          plot_annotation(title = paste(extra_info,"\nCLUSTER ", top1$cluster[k], ", GENE: ",top1$gene[k],sep = ""),
+                          theme =
+                            theme(axis.text.x = element_text(size = 20),
+                                  axis.text.y = element_text(size = 20),
+                                  axis.title.x = element_text(size = 20, margin=margin(10,0,0,0)),
+                                  axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                                  legend.title = element_blank(),
+                                  legend.text = element_text(size = 15),
+                                  plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
+      }else{
+        p1 <- FeaturePlot(data, features = top1$gene[k], split.by = group,
+                          label = T, pt.size = 0.5, label.size = 6, max.cutoff = 'q95')+
+          plot_annotation(title = paste(extra_info,"\nCLUSTER ", top1$cluster[k], ", GENE: ",top1$gene[k],sep = ""),
+                          theme =
+                            theme(axis.text.x = element_text(size = 20),
+                                  axis.text.y = element_text(size = 20),
+                                  axis.title.x = element_text(size = 20, margin=margin(10,0,0,0)),
+                                  axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
+                                  legend.title = element_blank(),
+                                  legend.text = element_text(size = 15),
+                                  plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
+        p <- p+p1
+      }
+    }
+  }
+
+  out$de_type <- de_type
+  out$featureplot <- p
+  out$top1 <- top1
+  out$topn <- topn
+  out$de_name <- de_name
+
+  return(out)
+}
+
+choose_topn <- function(current, wt, group, n, max = T){
+  current <- current[order(current[,wt], decreasing = ifelse(max == T, T, F)),]
+  temp <- split(current,current[,group])
+  temp <- lapply(temp, function(x){x <- x[1:n,]})
+  temp <- do.call(rbind.data.frame, temp)
+  return(temp)
+}
+
+group_medianexpr <- function(current_data_markers, data, ref_group = "seurat_clusters", group = "seurat_clusters", cell_type = F,n=10){
+
+  wt <- colnames(current_data_markers)[grep("log.*FC", colnames(current_data_markers), ignore.case = T)]
+  if(cell_type == TRUE){
+    current_data_markers$CELL_TYPE <- data@meta.data[match(current_data_markers$cluster, data@meta.data[,ref_group]),"CELL_TYPE"]
+    top_markers <- current_data_markers %>% group_by(CELL_TYPE) %>% top_n(n = n, eval(parse(text = wt)))
+  }else{
+    top_markers <- current_data_markers %>% group_by(cluster) %>% top_n(n = n, eval(parse(text = wt)))
+  }
+  top_markers <- top_markers[order(top_markers[,grep("log.*FC", colnames(current_data_markers), ignore.case = T)], decreasing = T),]
+  top_markers$gene <- factor(top_markers$gene, levels = c(as.character(unlist(unique(top_markers[order(top_markers[,grep("log.*FC", colnames(current_data_markers), ignore.case = T)], decreasing = T),"gene"])))))
+  # top_markers[,group] <- factor(top_markers[,group], levels = sort(as.numeric(as.character(unique(top_markers[,group])), decreasing = F)))
+
+  top_expr <- data.frame(t(GetAssayData(data)[which(row.names(GetAssayData(data)) %in% unique(top_markers$gene)),]))
+
+  if(cell_type == FALSE){
+    top_expr$population <- data@meta.data[match(row.names(top_expr), row.names(data@meta.data)),group]
+    clusters <- sort(as.numeric(as.character(unique(top_expr$population))))
+  }else{
+    top_expr$population <- data@meta.data[match(row.names(top_expr), row.names(data@meta.data)),"CELL_TYPE"]
+    clusters <- sort(as.character(unique(top_expr$population)))
+  }
+
+  median_expr <- NULL
+  cell_number <- NULL
+  expr <- NULL
+
+  for(i in 1:length(clusters)){
+    current <- top_expr[which(top_expr$population == clusters[i]),grep("population",colnames(top_expr), ignore.case = T, invert = T)]
+    cell_number <- c(cell_number,nrow(current))
+    for (k in 1:ncol(current)){
+      expr <- c(expr,median(current[current[,k]>0,k]))
+    }
+    median_expr <- rbind(median_expr, expr)
+    expr <- NULL
+  }
+
+  median_expr <- data.frame(t(median_expr))
+  row.names(median_expr) <- colnames(top_expr)[grep("population",colnames(top_expr), ignore.case = T, invert = T)]
+  colnames(median_expr) <- clusters
+  # median_expr <- median_expr[,colSums(median_expr) > 0]
+
+  plot_median <- scale(median_expr)
+  plot_median <- t(scale(t(plot_median)))
+  out <- NULL
+  out$plot_median <- plot_median
+  out$top_markers <- top_markers
+  out$top_expr <- top_expr
+  # out$current_data_markers
+  return(out)
 }

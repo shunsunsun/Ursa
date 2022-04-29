@@ -5,14 +5,14 @@
 \title{Run a post-quantification 10X technology-format CyTOF pipeline}
 \usage{
 CyTOFPip(
-  project_name = "Polaris_CyTOF",
+  project_name = "Ursa_CyTOF",
   input_dir = "./",
   output_dir = "./",
   pheno_file
 )
 }
 \arguments{
-\item{project_name}{Project name. 'Polaris_CyTOF' by default.}
+\item{project_name}{Project name. 'Ursa_CyTOF' by default.}
 
 \item{input_dir}{Directory to all input files. Current working directory by
 default.}

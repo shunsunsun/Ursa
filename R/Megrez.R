@@ -43,7 +43,7 @@ NULL
 #' This function will run a bioinformatics analysis of post-quantification scCNV
 #' pipeline. Supports multiple samples analysis.
 #'
-#' @param project_name Project name. 'Polaris_scCNV' by default.
+#' @param project_name Project name. 'Ursa_scCNV' by default.
 #' @param input_dir Directory to all input files. Current working directory by default.
 #' @param output_dir Output directory. Current working directory by default.
 #' A new folder with the given project name with time stamp as suffix will be
@@ -56,7 +56,7 @@ NULL
 #'
 #' @export
 #'
-scCNVPip <- function(project_name = "Polaris_scCNV",
+scCNVPip <- function(project_name = "Ursa_scCNV",
                      input_dir = "./",
                      output_dir = "./",
                      pheno_file,
@@ -375,7 +375,7 @@ scCNVPip <- function(project_name = "Polaris_scCNV",
   tree_est <- groupOTU(tree_est, clusters)
   tree_est$plotx <- plotx
 
-  CreatePolaris <- setClass("Polaris", slots=list(project = "character",assay = "character",
+  CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
                                                   data="list", cell_stats="data.frame", dim = "data.frame",
                                                   binary_cnv = "data.frame",selected_chrom = "data.frame",
                                                   chrom_bar = "data.frame", proportion = "data.frame",
@@ -383,14 +383,14 @@ scCNVPip <- function(project_name = "Polaris_scCNV",
 
  ccolor_schemes <- ini_colorschemes(assay = "scCNV", data = list(data_cell_stats = data_cell_stats, umap_coords = umap_coords))
 
- results <- CreatePolaris(project = project_name,assay = "scCNV", data = data_current,
+ results <- CreateUrsa(project = project_name,assay = "scCNV", data = data_current,
                 cell_stats = data_cell_stats, dim = umap_coords,
                 binary_cnv = binary_cnv_events,
                 selected_chrom = select_bychrom_data,
                 chrom_bar = select_bychrom_data_bar,
                 proportion = data_prop, tree = tree_est,
                 color_schemes = ccolor_schemes)
-  saveRDS(results, paste(cdir,"Polaris_Object_scCNV_Result_",project_name,".RDS", sep = ""))
+  saveRDS(results, paste(cdir,"Ursa_Object_scCNV_Result_",project_name,".RDS", sep = ""))
 
   plot_ploidy(results, cdir)
 
