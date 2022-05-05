@@ -75,3 +75,5 @@ export(SpatialPip)
 export(scATACPip)
 export(scCNVPip)
 export(scRNASEQPip)
+export(scImmunePip)
+

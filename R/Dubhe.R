@@ -55,7 +55,7 @@ NULL
 #' files.
 #' @param integration_method Integration method for combining scRNASeq data.
 #' Default by harmony.
-#'
+#' @export
 scImmunePip <- function(project_name = "Ursa_scImmune",
                      input_dir = "./",
                      output_dir = "./",

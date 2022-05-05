@@ -1,4 +1,4 @@
-#' @keywords Internal
+#' @keywords internal
 
 plot_ploidy <- function(results, output_dir){
   data <- results@data
