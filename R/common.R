@@ -669,3 +669,98 @@ group_medianexpr <- function(current_data_markers, data, ref_group = "seurat_clu
   # out$current_data_markers
   return(out)
 }
+
+beforeafter_dimplot <- function(data1, data2, dim1, dim2, group, subtitle1, subtitle2, maintitle, titlesize, col, legend_position = "bottom"){
+  p1 <- plot_bygroup(data1, x = dim1, y = dim2, group = group, plot_title = subtitle1,
+                     col = col, annot = FALSE, legend_position = legend_position, point_size = 1)
+  p2 <- plot_bygroup(data2,  x = dim1, y = dim2, group = group, plot_title = subtitle2,
+                     col = col, annot = FALSE, legend_position = legend_position, point_size = 1)
+
+  p <- p1+p2+
+    plot_annotation(title = maintitle, theme = theme(plot.title = element_text(size = titlesize, face = "bold", hjust = 0.5)))
+
+  return(p)
+}
+
+plot_pseudo <- function(data, reduction, group, label_size, plot_title, col, n_col,
+                        cell_size = 2, traj_size = 1.5){
+
+  p <- plot_cells(data,
+                  reduction_method = reduction,
+                  color_cells_by = group,
+                  group_label_size = label_size,
+                  graph_label_size = 6,
+                  cell_size = cell_size,
+                  cell_stroke = I(2/2),
+                  alpha = 0.9,
+                  trajectory_graph_segment_size = traj_size,
+                  label_groups_by_cluster=FALSE,
+                  label_leaves=FALSE,
+                  label_branch_points=FALSE)+
+    scale_color_manual(values = gen_colors(col,n_col))+
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          strip.text = element_text(size = 15),
+          # legend.position = "right",
+          legend.title = element_text(size = 20),
+          legend.text = element_text(size = 15),
+          legend.key.size = unit(1.2, "cm"),
+          axis.text.x = element_text(size = 20),
+          axis.text.y = element_text(size = 20),
+          axis.title.x = element_text(size = 20, margin=margin(10,0,0,0)),
+          axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)))+
+    plot_annotation(title = plot_title,
+                    theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+
+  return(p)
+}
+
+# get_earliest_principal_node() is from Monocle3
+get_earliest_principal_node <- function(mono3data, group, group_element){
+  cell_ids <- which(colData(mono3data)[,group] == group_element)
+  # mono3data <- preprocess_cds(mono3data, num_dim = 100)
+  closest_vertex <-
+    mono3data@principal_graph_aux[["UMAP"]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- as.matrix(closest_vertex[colnames(mono3data),])
+  root_pr_nodes <-
+    igraph::V(principal_graph(mono3data)[["UMAP"]])$name[as.numeric(names
+                                                                    (which.max(table(closest_vertex[cell_ids,]))))]
+  return(root_pr_nodes)
+}
+
+adjust_plot <- function(p,col,n_col,plot_title="", fill = F){
+  if(fill == F){
+    p <- p + scale_color_manual(values = gen_colors(col,n_col))
+  }
+  p <- p +
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          strip.text = element_text(size = 15),
+          # legend.position = "right",
+          legend.title = element_text(size = 15),
+          legend.text = element_text(size = 15),
+          legend.key.size = unit(1.2, "cm"),
+          axis.text.x = element_text(size = 20),
+          axis.text.y = element_text(size = 20),
+          axis.title.x = element_text(size = 20, margin=margin(10,0,0,0)),
+          axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)))+
+    plot_annotation(title = plot_title,
+                    theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+  return(p)
+}
+
+plot_3d <- function(d1, d2, d3, color_group, plot_title, n, lt,
+                    current_text,t1,t2,t3,col = color_conditions$general){
+
+  library(plotly)
+  p <- plot_ly(x=d1,y=d2,z=d3,type="scatter3d", mode="markers",size = 0.2,
+               colors = gen_colors(col, n),
+               color=color_group,
+               hoverinfo = "text",
+               hovertext = current_text)%>%
+    layout(scene = list(xaxis = list(title = t1),
+                        yaxis = list(title = t2),
+                        zaxis = list(title = t3)),
+           title =paste("<b>",plot_title,"</b>",sep = ""),
+           legend = list(title = list(text = lt)))
+  return(p)
+
+}

@@ -9,6 +9,7 @@
 #' @import cowplot
 #' @import data.table
 #' @import dplyr
+#' @import ggbeeswarm
 #' @import ggplot2
 #' @import ggpubr
 #' @import ggrepel
@@ -28,6 +29,7 @@
 #' @import akmedoids
 #' @import celldex
 #' @import celltalker
+#' @import clusterProfiler
 #' @import DOSE
 #' @import enrichplot
 #' @import ensembldb
@@ -81,7 +83,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                       cc_regression = 0){
   print("Initialising pipeline environment..")
   hs <- org.Hs.eg.db
-  hgnc.table <- data("hgnc.table", package="HGNChelper")
+  data("hgnc.table", package="HGNChelper")
+  head(hgnc.table)
   hpca.se <- HumanPrimaryCellAtlasData()
   s.genes <- cc.genes$s.genes
   g2m.genes <- cc.genes$g2m.genes
@@ -142,7 +145,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     }else{p <- p1+p2}
 
     somePDFPath <- paste(cdir,"1URSA_PLOT_PREFILTERING_RNA_INFO_VIOLIN_",pheno_data[j,"SID"],"_",project_name,".pdf", sep = "")
-    pdf(file=somePDFPath, width=14, height=8,pointsize=10)
+    pdf(file=somePDFPath, width=14, height=8,pointsize=12)
     print(p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
     dev.off()
 
@@ -370,7 +373,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       }
 
       somePDFPath = paste(cdir,"9URSA_PLOT_POSTFILTERING_RNA_INFO_VIOLIN_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=14, height=8,pointsize=10)
+      pdf(file=somePDFPath, width=14, height=8,pointsize=12)
       print(p+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
@@ -507,32 +510,32 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                          annot = T, legend_position = "right", point_size = 1)
 
       somePDFPath = paste(cdir,"19URSA_PLOT_AVE_LOGFC_TOP_GENES_TSNE_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=16, height=7,pointsize=10)
+      pdf(file=somePDFPath, width=16, height=7,pointsize=12)
       grid.arrange(p1, p2, ncol = 2)
       dev.off()
 
       somePDFPath = paste(cdir,"20URSA_PLOT_AVE_LOGFC_TOP_GENES_UMAP_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=16, height=7,pointsize=10)
+      pdf(file=somePDFPath, width=16, height=7,pointsize=12)
       grid.arrange(p1, p3, ncol = 2)
       dev.off()
 
       top_1_markers <- current_out$current_data_markers %>% group_by(cluster) %>% top_n(n = 1, eval(parse(text = wt)))
 
       somePDFPath = paste(cdir,"21URSA_PLOT_RIDGE_TOP_FC_SIG_GENES_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=14, height=length(unique(unlist(top_1_markers$gene)))/4*6,pointsize=10)
+      pdf(file=somePDFPath, width=14, height=length(unique(unlist(top_1_markers$gene)))/4*6,pointsize=12)
       print(RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 4,
                       cols = ccolors)+
               plot_annotation(title = paste("TOP1: ", annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
       somePDFPath = paste(cdir,"22URSA_PLOT_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=10)
+      pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=12)
       print(current_out$featureplot +plot_layout(ncol = 4) +
               plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
       somePDFPath = paste(cdir,"23URSA_PLOT_VIOLIN_TOP_",n,"_MARKERS_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=16, height=10,pointsize=10)
+      pdf(file=somePDFPath, width=16, height=10,pointsize=12)
 
       for(k in 1:length(current_clusters)){
         current <- topn[which(topn$cluster == current_clusters[k]),]
@@ -546,7 +549,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       dev.off()
 
       somePDFPath = paste(cdir,"24URSA_PLOT_HEATMAP_TOP_",n,"_MARKERS_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
-      pdf(file=somePDFPath, width=10, height=length(unique(topn$gene))*0.1,pointsize=10)
+      pdf(file=somePDFPath, width=10, height=length(unique(topn$gene))*0.1,pointsize=12)
       print(DoHeatmap(data_current[[j]], features = topn$gene,
                       group.colors = ccolors, size = 8) +
               ggtitle(annot_names[j])+
@@ -610,29 +613,32 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       dev.off()
 
       ################ Pathway Analysis #########################################################################
-      n <- 500
+      # n <- 500
       filtered_markers <- current_out$current_data_markers[grep("AC[0-9]+\\.[0-9]+|AL[0-9]+\\.[0-9]+",current_out$current_data_markers$gene, ignore.case = T, invert = T),]
-      topn <- filtered_markers %>% group_by(cluster) %>% top_n(n = n, wt = wt)
-
+      topn <- split(filtered_markers, filtered_markers$cluster)
+      topn <- lapply(topn, function(x){
+      x <- x[which(abs(x$avg_log2FC) > 0.25),]
+      })
+      topn <- do.call(rbind.data.frame, topn)
       if(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2){
         topn$ENSEMBL_ID <- gsub("(ENS.*?[0-9]+)[-|_|\\s+|\\.].*","\\1",topn$gene)
-        mapped_id <- select(hs, keys = topn$ENSEMBL_ID, columns = c("ENTREZID", "SYMBOL"), keytype = "ENSEMBL")
+        mapped_id <- ensembldb::select(hs, keys = topn$ENSEMBL_ID, columns = c("ENTREZID", "SYMBOL"), keytype = "ENSEMBL")
         topn$ENTREZ_ID <- mapped_id[match(topn$ENSEMBL_ID, mapped_id$ENSEMBL),"ENTREZID"]
       }else{
-        mapped_id <- select(hs, keys = topn$gene, columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
+        mapped_id <- ensembldb::select(hs, keys = topn$gene, columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
         topn$ENTREZ_ID <- mapped_id[match(topn$gene, mapped_id$SYMBOL),"ENTREZID"]
       }
 
       if(length(which(is.na(topn$ENTREZ_ID))) > 0 & !(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2)){
         current <- topn[which(is.na(topn$ENTREZ_ID)),]
         current$alternate_gene <- hgnc.table[match(current$gene, hgnc.table$Symbol),"Approved.Symbol"]
-        current_id <- select(hs, keys = current$alternate_gene[!is.na(current$alternate_gene)], columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
+        current_id <- ensembldb::select(hs, keys = current$alternate_gene[!is.na(current$alternate_gene)], columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
         current$ENTREZ_ID <- current_id[match(current$alternate_gene, current_id$SYMBOL),"ENTREZID"]
         topn[which(is.na(topn$ENTREZ_ID)),"ENTREZ_ID"] <- current[match(as.character(unlist(topn[which(is.na(topn$ENTREZ_ID)),"gene"])), current$gene),"ENTREZ_ID"]
       }
       topn <- topn[!is.na(topn$ENTREZ_ID),]
 
-      p_threshold <- 0.01
+      p_threshold <- 0.05
       current <- split(topn, topn$cluster)
       pathway_EA_result <- NULL
       pathway_EA_result <- lapply(current, function(x){
@@ -650,36 +656,38 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
       summary_pathways <- NULL
       n <- 15
+      somePDFPath = paste(cdir,"28URSA_PLOT_TOP_",n,"_PATHWAYS_IN_EACH_CLUSTER_TOPFC200GENES_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=12, height=6,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
         if(!is.null(current)){
           if(nrow(current@result) > 0){
             summary_pathways <- rbind(summary_pathways, data.frame(CLUSTER = names(pathway_EA_result)[i],current))
-            results[['p26plots']][[length(results[['p26plots']])+1]] <- barplot(current, showCategory=n, orderBy = "x")+
-              ggtitle(paste(annot_names[j],"\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = ""))
-            names(results[['p26plots']])[length(results[['p26plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            print(barplot(current, showCategory=n, orderBy = "y")+
+              ggtitle(paste(annot_names[j],"\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = "")))
           }
         }
       }
 
-      results[['p27data']][[j]] <- summary_pathways
-      names(results[['p27data']])[j] <- pheno_data[j,"SID"]
+      dev.off()
 
+      write.table(summary_pathways, paste(cdir, "29URSA_TABLE_TOP_ABS0.25_AVG_LOG2FC_ENRICHMENT_TERMS_",annot_names[j], "_",project_name,".txt",sep = ""), quote = F, row.names = F, sep = "\t")
+
+      somePDFPath = paste(cdir,"30URSA_PLOT_DOT_PLOT_TOP_ABS0.25_AVG_LOG2FC_PATHWAYS_IN_EACH_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=12, height=6,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
         if(!is.null(current)){
           if(nrow(current@result) > 0){
-            results[['p28plots']][[length(results[['p28plots']])+1]] <- dotplot(current, showCategory=n, orderBy = "x")+ggtitle(paste(annot_names[j], "\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = ""))
-            names(results[['p28plots']])[length(results[['p28plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            print(dotplot(current, showCategory=n, orderBy = "x")+ggtitle(paste(annot_names[j], "\nEnriched Terms for ORA: Cluster ", names(pathway_EA_result)[i],sep = "")))
           }
         }
       }
+      dev.off()
 
-      n <- 200
       topn_cluster <- split(topn, topn$cluster)
-      p1 <- NULL
-      p2 <- NULL
-      p3 <- NULL
+      somePDFPath = paste(cdir,"31URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_GENES_CONCEPT_NETWORK_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=35, height=9,pointsize=12)
 
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
@@ -695,42 +703,48 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             gene_list <- sort(gene_list, decreasing = TRUE)
             gene_list <- gene_list[!duplicated(names(gene_list))]
 
-            p1[[i]] <- cnetplot(current, foldChange=gene_list) +
+            p1 <- NULL
+            p2 <- NULL
+            p3 <- NULL
+            p1 <- cnetplot(current, foldChange=gene_list) +
               ggtitle(paste(annot_names[j], "\nA: Gene-Concept Network, ",wt,": Cluster ", names(pathway_EA_result)[i],sep = "")) +
               theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
-            p2[[i]] <- cnetplot(current, categorySize="pvalue", foldChange=gene_list) +
+            p2 <- cnetplot(current, categorySize="pvalue", foldChange=gene_list) +
               ggtitle(paste(annot_names[j], "\nB: Gene-Concept Network, ",wt," & P-Value: Cluster ", names(pathway_EA_result)[i],sep = "")) +
               theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
-            p3[[i]] <- cnetplot(current, foldChange=gene_list, circular = TRUE, colorEdge = TRUE) +
+            p3 <- cnetplot(current, foldChange=gene_list, circular = TRUE, colorEdge = TRUE) +
               ggtitle(paste(annot_names[j], "\nC: Gene-Concept Network, ",wt,": Cluster ", names(pathway_EA_result)[i],sep = "")) +
               theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
 
-            results[['p29plots']][[length(results[['p29plots']])+1]] <- cowplot::plot_grid(p1[[i]], p2[[i]], p3[[i]], ncol=3, rel_widths=c(1.2, 1.2, 1.2))
-            names(results[['p29plots']])[length(results[['p29plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            print(cowplot::plot_grid(p1, p2, p3, ncol=3, rel_widths=c(1.2, 1.2, 1.2)))
           }
         }
       }
+      dev.off()
 
-      p1 <- NULL
-      p2 <- NULL
-
+      somePDFPath = paste(cdir,"32URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_NETWORK_ENRICHMENT_TERMS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=22, height=8,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
         if(!is.null(current)){
           if(nrow(current@result) > 0){
-            p1[[i]] <- cnetplot(current, node_label="category") +
+            p1 <- NULL
+            p2 <- NULL
+            p1 <- cnetplot(current, node_label="category") +
               ggtitle(paste(annot_names[j], "\nA: Network Terms: Cluster ", names(pathway_EA_result)[i],sep = "")) +
               theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
-            p2[[i]] <- cnetplot(current, node_label="gene") +
+            p2 <- cnetplot(current, node_label="gene") +
               ggtitle(paste(annot_names[j], "\nA: Network Genes: Cluster ", names(pathway_EA_result)[i],sep = "")) +
               theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
 
-            results[['p30plots']][[length(results[['p30plots']])+1]] <- cowplot::plot_grid(p1[[i]], p2[[i]], ncol=2, rel_widths=c(1.2, 1.2, 1.2))
-            names(results[['p30plots']])[length(results[['p30plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+            print(cowplot::plot_grid(p1, p2, ncol=2, rel_widths=c(1.2, 1.2, 1.2)))
           }
         }
       }
+      dev.off()
 
+      somePDFPath = paste(cdir,"33URSA_PLOT_HEATMAP_TOP_ABS0.25_AVG_LOG2FC_ENRICHED_NETWORK_TERMS_BY_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=22, height=6,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
         if(!is.null(current)){
@@ -745,29 +759,31 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             gene_list <- sort(gene_list, decreasing = TRUE)
             gene_list <- gene_list[!duplicated(names(gene_list))]
             # currentR <- setReadable(current, 'org.Hs.eg.db', 'ENTREZID')
-            results[['p31plots']][[length(results[['p31plots']])+1]] <- heatplot(current, foldChange = gene_list) +
+            print(heatplot(current, foldChange = gene_list, label_format = 20) +
               ggtitle(paste(annot_names[j], "\nHeatmap of Enrichment Terms: Cluster ", names(pathway_EA_result)[i],sep = "")) +
-              theme(plot.title = element_text(face = "bold"))
-            names(results[['p31plots']])[length(results[['p31plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+              theme(plot.title = element_text(face = "bold")))
           }
         }
       }
+      dev.off()
 
+      somePDFPath = paste(cdir,"34URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_ENRICHMENT_PROPORTIONS_GENES_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=12, height=10,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         current <- pathway_EA_result[[i]]
         if(!is.null(current)){
           if(nrow(current@result) > 0){
             currentR <- pairwise_termsim(current)
             if(nrow(currentR@result) > 10){
-              results[['p32plots']][[length(results[['p32plots']])+1]] <- emapplot(currentR, cex_line = 0.1) +
+              print(emapplot(currentR, cex_line = 0.1) +
                 ggtitle(paste(annot_names[j], "\nEnrichment Map: Cluster ", names(pathway_EA_result)[i],sep = "")) +
                 scale_colour_gradient_tableau(palette = "Red-Gold") +
-                theme(plot.title = element_text(face = "bold"))
-              names(results[['p32plots']])[length(results[['p32plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+                theme(plot.title = element_text(face = "bold")))
             }
           }
         }
       }
+      dev.off()
 
       current <- NULL
       for(i in 1:length(topn_cluster)){
@@ -782,22 +798,26 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       plotx <- compareCluster(current, fun="enrichKEGG", organism="hsa", pvalueCutoff=0.05)
       currentR <- pairwise_termsim(plotx)
 
-      results[['p33plots']][[j]] <- emapplot(currentR, cex_line = 0.1, pie="count", pie_scale=1.5, layout="kk") +
+      somePDFPath = paste(cdir,"35URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_ENRICHMENT_PROPORTIONS_GENES_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=9, height=8,pointsize=12)
+      print(emapplot(currentR, cex_line = 0.1, pie="count", pie_scale=1.5, layout="kk") +
         ggtitle(paste(annot_names[j], "\nEnrichment Map with Proportions", sep = "")) +
         scale_fill_tableau(palette = "Tableau 20") +
-        theme(plot.title = element_text(face = "bold"))
-      names(results[['p33plots']])[j] <- pheno_data[j,"SID"]
+        theme(plot.title = element_text(face = "bold")))
+      dev.off()
 
+      somePDFPath = paste(cdir,"36URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_KEGG_ENRICHMENT_MAP_PROPORTION_CLUSTER_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=6,pointsize=12)
       for(i in 1:length(pathway_EA_result)){
         if(!is.null(pathway_EA_result[[i]])){
           if(nrow(pathway_EA_result[[i]]@result) > 0){
-            results[['p34plots']][[length(results[['p34plots']])+1]] <- upsetplot(pathway_EA_result[[i]]) +
+            print(upsetplot(pathway_EA_result[[i]]) +
               ggtitle(paste(annot_names[j], "\nUpset Plot: Cluster ", names(pathway_EA_result)[i],sep = "")) +
-              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm"))
-            names(results[['p34plots']])[length(results[['p34plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+              theme(plot.title = element_text(face = "bold"),plot.margin = unit(c(1,1,1,1), "cm")))
           }
         }
       }
+      dev.off()
 
       GSEA_result <- NULL
       for(i in 1:length(topn_cluster)){
@@ -833,18 +853,21 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
       if(!all(if_plot == FALSE)){
 
+        somePDFPath = paste(cdir,"37URSA_PLOT_TOP_ABS0.25_AVG_LOG2FC_GSEA_GENE_ENRICHMENT_SCORE_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=10, height=7,pointsize=12)
         for(i in 1:length(GSEA_result)){
           current <- GSEA_result[[i]]
           if(!is.null(current)){
             if(nrow(current@result[which(current@result$ID != "-"),]) > 0){
-              results[['p35plots']][[length(results[['p35plots']])+1]] <- gseaplot2(current, geneSetID = which(current@result$ID != "-"), title = current$Description[which(current$Description != "-")], pvalue_table = TRUE,
-                                                                                    ES_geom = "line")+
-                ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[i],sep = "")) +
-                theme(plot.title = element_text(face = "bold"))
-              names(results[['p35plots']])[length(results[['p35plots']])] <- paste("CLUSTER_",names(pathway_EA_result)[i],"|",pheno_data[j,"SID"],sep = "")
+              print(gseaplot2(current, geneSetID = which(current@result$ID != "-"), title = current$Description[which(current$Description != "-")], pvalue_table = TRUE,
+ES_geom = "line")+
+ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[i],sep = "")) +
+                theme(plot.title = element_text(face = "bold")))
             }
           }
         }
+
+        dev.off()
       }
 
       ##################### CELL TYPES ##########################################################################
@@ -855,8 +878,11 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
         top_markers_cell_type <- current$top_markers
         n <- length(unique(top_markers_cell_type$gene))
 
-        results[['p36plots']][[j]] <- complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed)
-        names(results[['p36plots']])[j] <- pheno_data[j,"SID"]
+        plot_median_cell_type[is.na(plot_median_cell_type)] <- 0
+        somePDFPath = paste(cdir,"38SCA_PLOT_HEATMAP_MEDIAN_EXPR_CELL_TYPE_TOP_FC_", annot_names[j], "_", project_name, ".pdf", sep = "")
+        pdf(file=somePDFPath, width=6, height=10,pointsize=12)
+        print(complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed))
+        dev.off()
 
         cell_types <- sort(as.character(unique(top_markers_cell_type$CELL_TYPE)))
         colors <- gen_colors(color_conditions$colorful,length(cell_types))
@@ -881,28 +907,30 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
         p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CELL_TYPE",
                            plot_title = annot_names[j],col = cct_colors,numeric = F,
-                           annot = T, legend_position = "right", point_size = 1)
+                           annot = T, legend_position = "right", point_size = 1, legendsize = 10)
         p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CELL_TYPE",
                            plot_title = annot_names[j],col = cct_colors,numeric = F,
-                           annot = T, legend_position = "right", point_size = 1)
+                           annot = T, legend_position = "right", point_size = 1, legendsize = 10)
 
-        results[['p37plots']][[j]] <- p1
-        names(results[['p37plots']])[j] <- pheno_data[j,"SID"]
-        results[['p372plots']][[j]] <- p2
-        names(results[['p372plots']])[j] <- pheno_data[j,"SID"]
-        results[['p373plots']][[j]] <- p3
-        names(results[['p373plots']])[j] <- pheno_data[j,"SID"]
+        somePDFPath = paste(cdir,"39URSA_PLOT_AVE_LOGFC_TOP_GENES_TSNE_CELL_TYPES_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=24, height=ceiling(length(unique(plotx$CELL_TYPE))/3)*5,pointsize=12)
+        grid.arrange(p1, p2, ncol = 2)
+        dev.off()
 
-        # grid.arrange(p1, p2, ncol = 2)
-        # grid.arrange(p1, p3, ncol = 2)
+        somePDFPath = paste(cdir,"40URSA_PLOT_AVE_LOGFC_TOP_GENES_UMAP_CELL_TYPES_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=24, height=ceiling(length(unique(plotx$CELL_TYPE))/3)*5,pointsize=12)
+        grid.arrange(p1, p3, ncol = 2)
+        dev.off()
 
         current_out$current_data_markers$CELL_TYPE <- data_current[[j]]@meta.data[match(current_out$current_data_markers$cluster, data_current[[j]]$seurat_clusters),"CELL_TYPE"]
         top_1_markers <- current_out$current_data_markers %>% group_by(CELL_TYPE) %>% top_n(n = 1, eval(parse(text = wt)))
         Idents(data_current[[j]]) <- "CELL_TYPE"
-        results[['p38plots']][[j]] <- RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 2,
-                                                cols = cct_colors)+
-          plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-        names(results[['p38plots']])[j] <- pheno_data[j,"SID"]
+        somePDFPath = paste(cdir,"41URSA_PLOT_RIDGE_TOP_FC_SIG_GENES_CELL_TYPES_",annot_names[j],"_",project_name,".pdf", sep = "")
+        pdf(file=somePDFPath, width=16, height=length(unique(unlist(top_1_markers$gene)))/2*6,pointsize=12)
+        print(RidgePlot(data_current[[j]], features = unique(unlist(top_1_markers$gene)), ncol = 2,
+                        cols = cct_colors)+
+                plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+        dev.off()
 
         Idents(data_current[[j]]) <- "orig.ident"
         DefaultAssay(data_current[[j]]) <- 'RNA'
@@ -942,6 +970,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     data <- RunTSNE(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
     data_dim <- data.frame(gen10x_plotx(data), DATA_TYPE = "BEFORE_INTEGRATION", SAMPLE_ID = data$orig.ident)
 
+    write.table(data_dim, paste(cdir, "42URSA_TABLE_DIM_PARAMETERS_BEFORE_INTEGRATION_", project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
+
     if((toupper(integration_method) == "SEURAT") | (toupper(integration_method) == "NULL")){
       # integration_method <- "SEURAT"
       integration_name <- "SEURAT_INTEGRATED"
@@ -962,27 +992,38 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       current <- cbind(data.frame(genharmony_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
     }
 
+    write.table(current, paste(cdir, "43URSA_TABLE_DIM_PARAMETERS_AFTER_", integration_method, "_INTEGRATION_", project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
+
     data_dim <- rbind(data_dim, cbind(data.frame(gen10x_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident)))
 
-    results[['p39plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
-                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
-                                                 dim1= "UMAP_1", dim2 = "UMAP_2", group = "SAMPLE_ID",
-                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = sample_colors)
+    somePDFPath = paste(cdir,"44URSA_PLOT_UMAP_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=10,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                              data_dim[data_dim$DATA_TYPE == integration_name,],
+                              dim1= "UMAP_1", dim2 = "UMAP_2", group = "SAMPLE_ID",
+                              subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                              maintitle = project_name, titlesize = 35, col = sample_colors))
+    dev.off()
 
-    results[['p40plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
-                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
-                                                 dim1= "tSNE_1", dim2 = "tSNE_2", group = "SAMPLE_ID",
-                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = sample_colors)
+    somePDFPath = paste(cdir,"45URSA_PLOT_TSNE_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=10,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                              data_dim[data_dim$DATA_TYPE == integration_name,],
+                              dim1= "tSNE_1", dim2 = "tSNE_2", group = "SAMPLE_ID",
+                              subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                              maintitle = project_name, titlesize = 35, col = sample_colors))
+    dev.off()
 
     if(integration_method == "SEURAT"){
 
-      results[['p41plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+      somePDFPath = paste(cdir,"46URSA_PLOT_PCA_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+      print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
                                                    data_dim[data_dim$DATA_TYPE == integration_name,],
                                                    dim1= "PC_1", dim2 = "PC_2", group = "SAMPLE_ID",
                                                    subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                   maintitle = project_name, titlesize = 35, col = sample_colors)
+                                                   maintitle = project_name, titlesize = 35, col = sample_colors))
+      dev.off()
     }else if(integration_method == "HARMONY"){
       p1 <- NULL
       p2 <- NULL
@@ -991,8 +1032,11 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       p2 <- plot_bygroup(current, x = "HARMONY_1", y = "HARMONY_2", group = "SAMPLE_ID", plot_title = integration_name,
                          col = sample_colors, annot = FALSE, legend_position = "bottom")
 
-      results[['p41plots']] <- p1+p2+
-        plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+      somePDFPath = paste(cdir,"46URSA_PLOT_PCA_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+      print(p1+p2+
+              plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5))))
+      dev.off()
     }
 
     data_dim$GROUP <- data@meta.data[match(data_dim$SAMPLE_ID, data$orig.ident),"GROUP"]
@@ -1001,24 +1045,29 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     cgroup_colors <- gen_colors(color_conditions$bright,length(unique(data_dim$GROUP)))
     names(cgroup_colors) <- sort(unique(data_dim$GROUP))
 
-    results[['p42plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
-                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
-                                                 dim1= "UMAP_1", dim2 = "UMAP_2",group = "GROUP",
-                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = cgroup_colors)
+    somePDFPath = paste(cdir,"47URSA_PLOT_BY_GROUP_UMAP_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                              data_dim[data_dim$DATA_TYPE == integration_name,],
+                              dim1= "UMAP_1", dim2 = "UMAP_2",group = "GROUP",
+                              subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                              maintitle = project_name, titlesize = 35, col = cgroup_colors))
+    dev.off()
 
-
-    results[['p43plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+    somePDFPath = paste(cdir,"48URSA_PLOT_BY_GROUP_TSNE_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
                                                  data_dim[data_dim$DATA_TYPE == integration_name,],
                                                  dim1= "tSNE_1", dim2 = "tSNE_2",group = "GROUP",
                                                  subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = cgroup_colors)
+                                                 maintitle = project_name, titlesize = 35, col = cgroup_colors))
+    dev.off()
 
     p1 <- NULL
     p2 <- NULL
     p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "GROUP", plot_title = "BEFORE_INTEGRATION",
                        col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
-    if(integration_method == "SEURAT"){
+    if(toupper(integration_method) == "SEURAT"){
       p2 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == integration_name,], x = "PC_1", y = "PC_2", group = "GROUP", plot_title = integration_name,
                          col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
     }else{
@@ -1026,52 +1075,71 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                          col = cgroup_colors, annot = FALSE, legend_position = "bottom", point_size = 1)
 
     }
-    results[['p44plots']] <- p1+p2+
-      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+
+    somePDFPath = paste(cdir,"49URSA_PLOT_BY_GROUP_PCA_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(p1+p2+
+            plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5))))
+    dev.off()
 
     cbatch_colors <- gen_colors(color_conditions$general,length(unique(data_dim$BATCH)))
     names(cbatch_colors) <- sort(unique(data_dim$BATCH))
 
-    results[['p45plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
-                                                 data_dim[data_dim$DATA_TYPE == integration_name,],
-                                                 dim1= "UMAP_1", dim2 = "UMAP_2", group = "BATCH",
-                                                 subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = cbatch_colors)
+    somePDFPath = paste(cdir,"50URSA_PLOT_BY_BATCH_UMAP_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+                              data_dim[data_dim$DATA_TYPE == integration_name,],
+                              dim1= "UMAP_1", dim2 = "UMAP_2", group = "BATCH",
+                              subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
+                              maintitle = project_name, titlesize = 35, col = cbatch_colors))
+    dev.off()
 
-    results[['p46plots']] <- beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
+    somePDFPath = paste(cdir,"51URSA_PLOT_BY_BATCH_TSNE_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(beforeafter_dimplot(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",],
                                                  data_dim[data_dim$DATA_TYPE == integration_name,],
                                                  dim1= "tSNE_1", dim2 = "tSNE_2", group = "BATCH",
                                                  subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
-                                                 maintitle = project_name, titlesize = 35, col = cbatch_colors)
+                                                 maintitle = project_name, titlesize = 35, col = cbatch_colors))
+    dev.off()
 
     p1 <- NULL
     p2 <- NULL
     p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "BATCH", plot_title = "BEFORE_INTEGRATION",point_size = 1,
                        col = cbatch_colors, annot = FALSE, legend_position = "bottom")
-    if(integration_method == "SEURAT"){
+    if(toupper(integration_method) == "SEURAT"){
       p2 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == integration_name,], x = "PC_1", y = "PC_2", group = "BATCH", plot_title = integration_name,point_size = 1,
                          col = cbatch_colors, annot = FALSE, legend_position = "bottom")
     }else{
       p2 <- plot_bygroup(current, x = "HARMONY_1", y = "HARMONY_2", group = "BATCH", plot_title = integration_name,
                          col = cbatch_colors, point_size = 1,annot = FALSE, legend_position = "bottom")
     }
-    results[['p47plots']] <- p1+p2+
-      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
 
+    somePDFPath = paste(cdir,"52URSA_PLOT_BY_BATCH_PCA_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=30, height=15,pointsize=12)
+    print(p1+p2+
+            plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5))))
+    dev.off()
 
     DefaultAssay(data) <- "integrated"
 
     n <- 10
-    top_features <- data.frame(TOP_PCA_POS_NEG_GENES = paste(capture.output(print(data[[ifelse(integration_method == "SEURAT", "pca", "harmony")]], dims = 1:5, nfeatures = n))))
+    top_features <- data.frame(TOP_PCA_POS_NEG_GENES = paste(capture.output(print(data[[ifelse(toupper(integration_method) == "SEURAT", "pca", "harmony")]], dims = 1:5, nfeatures = n))))
 
-    results[['p48plots']] <- VizDimLoadings(data, dims = 1:2, reduction = ifelse(integration_method == "SEURAT", "pca", "harmony"),col = color_conditions$mark[1])+ plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+    somePDFPath = paste(cdir,"53URSA_PLOT_INTEGRATED_DATA_TOP_FEATURES_ASSOC_PC12_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=14, height=7,pointsize=12)
+    print(VizDimLoadings(data, dims = 1:2, reduction = ifelse(toupper(integration_method) == "SEURAT", "pca", "harmony"),col = color_conditions$mark[1])+ plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
+    dev.off()
 
     ############## Integration Plots #################################################################
     DefaultAssay(data) <- "integrated"
-    results[['p49plots']] <- DimHeatmap(data, assays = ifelse(integration_method == "SEURAT", "integrated", "RNA"),
-                                        reduction = ifelse(integration_method == "SEURAT", "pca", "harmony"),
+    somePDFPath = paste(cdir,"54URSA_PLOT_HEATMAP_PC1_TOP_FEATURES_INTEGRATED_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=8, height=16,pointsize=12)
+    print(DimHeatmap(data, assays = ifelse(toupper(integration_method) == "SEURAT", "integrated", "RNA"),
+                                        reduction = ifelse(toupper(integration_method) == "SEURAT", "pca", "harmony"),
                                         dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE)+
-      plot_annotation(title = paste(project_name, sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      plot_annotation(title = paste(project_name, sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
     data <- FindNeighbors(data, reduction = reduction_method, dims = 1:ifelse(ncol(data) < 30, ncol(data), 30))
     data <- FindClusters(data, resolution = 0.8)
@@ -1101,36 +1169,51 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                             col=cluster_colors, color_by = "CLUSTER", group_by = "GROUP",
                             xlabel = "UMAP_1", ylabel = "UMAP_2")
 
-    results[['p50plots']] <- p1
-    results[['p51plots']] <- p2
+    somePDFPath = paste(cdir,"55URSA_PLOT_UMAP_AUTOCLUSTER_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=10,pointsize=12)
+    print(p1)
+    dev.off()
+
+    somePDFPath = paste(cdir,"56URSA_PLOT_UMAP_AUTOCLUSTER_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=10,pointsize=12)
+    print(p2)
+    dev.off()
 
     Idents(data) <- integration_cluster
     DefaultAssay(data) <- "RNA"
     current_out <- deanalysis(data, current_clusters, plot_title = project_name,group=NULL,de_analysis = "findallmarkers", cluster_name = integration_cluster)
-    results[['p52data']] <- current_out$current_data_markers
     de_type <- current_out$de_type
     de_name <- current_out$de_name
     top1 <- current_out$top1
     topn <- current_out$topn
     current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
+    current_data_markers <- current_out$current_data_markers
+    current_data_markers <- current_data_markers[order(current_data_markers$avg_log2FC, decreasing = T),]
+    write.table(current_data_markers, paste(cdir, "57URSA_TABLE_AUTO_CLUSTER_TOP_MARKERS_",integration_name,"_",project_name,".txt", sep = ""), quote = F, row.names = F, sep = "\t")
 
-    results[['p53plots']] <- current_out$featureplot+plot_layout(ncol = 4) +
-      # facet_wrap(~GROUP)+
-      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5)))
+    somePDFPath = paste(cdir,"58URSA_PLOT_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=12)
+    print(current_out$featureplot+plot_layout(ncol = 4) +
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5))))
+    dev.off()
 
+    somePDFPath = paste(cdir,"59URSA_PLOT_VIOLIN_TOP_",n,"_MARKERS_IN_CLUSTERS_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=12,pointsize=12)
     for(k in 1:length(current_clusters)){
       current <- topn[which(topn$cluster == current_clusters[k]),]
       current <- current[order(current$p_val_adj, decreasing = F),]
-      results[['p54plots']][[length(results[['p54plots']])+1]] <- VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",
+      print(VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",
                                                                           stack = T,flip = T,
                                                                           cols = cgroup_colors)&
         xlab("CLUSTERS")&
         plot_annotation(title = paste(project_name, ": CLUSTER ", current_clusters[k], sep = ""),
-                        theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
-      names(results[['p54plots']])[length(results[['p54plots']])] <- current_clusters[k]
+                        theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold"))))
     }
+    dev.off()
 
-    results[['p55plots']] <- DoHeatmap(data, features = topn$gene,
+    somePDFPath = paste(cdir,"60URSA_PLOT_HEATMAP_TOP_",n,"_MARKERS_IN_CLUSTERS_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=16*length(current_clusters)/(7+2),pointsize=12)
+    print(DoHeatmap(data, features = topn$gene,
                                        group.colors = cluster_colors, size = 8) +
       ggtitle(project_name)+
       NoLegend()+theme(axis.text.x = element_blank(),
@@ -1139,7 +1222,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                        axis.title.y = element_text(size = 20, margin=margin(0,10,0,0)),
                        legend.title = element_blank(),
                        legend.text = element_text(size = 15),
-                       plot.title = element_text(size = 25, face = "bold", hjust = 0.5))
+                       plot.title = element_text(size = 25, face = "bold", hjust = 0.5)))
+    dev.off()
 
     DefaultAssay(data) <- "RNA"
     orig_gene_names <- NULL
@@ -1157,41 +1241,61 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data)),
                        clusters =  data$seurat_clusters,
                        ref = hpca.se, assay.type.test=1,
+                       labels = hpca.se$label.fine)
+    data$INTEGRATED_CELL_TYPE <- clu_ann$labels[match(data$seurat_clusters,row.names(clu_ann))]
+    data@meta.data[which(is.na(data$INTEGRATED_CELL_TYPE)),"INTEGRATED_CELL_TYPE"] <- "Unidentifiable"
+
+    clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(data)),
+                       clusters =  data$seurat_clusters,
+                       ref = hpca.se, assay.type.test=1,
                        labels = hpca.se$label.main)
-    data$CELL_TYPE <- clu_ann$labels[match(data$seurat_clusters,row.names(clu_ann))]
-    data@meta.data[which(is.na(data$CELL_TYPE)),"CELL_TYPE"] <- "Unidentifiable"
+    data$INTEGRATED_CELL_TYPE_LEVEL2 <- clu_ann$labels[match(data$seurat_clusters,row.names(clu_ann))]
+    data@meta.data[which(is.na(data$INTEGRATED_CELL_TYPE_LEVEL2)),"CELL_TYPE"] <- "Unidentifiable"
 
     if(length(grep("ENSG[0-9]+",row.names(data), ignore.case = T)) > nrow(data)/2){
       row.names(data@assays$RNA@counts) <- orig_gene_names
       row.names(data@assays$RNA@data) <- orig_gene_names
       row.names(data@assays$RNA@scale.data) <- scale_orig_gene_names
     }
-    Idents(data) <- data$CELL_TYPE
-    plotx <- gen10x_plotx(data)
-    plotx$CELL_TYPE <- data$CELL_TYPE
-    plotx$GROUP <- data$GROUP
 
-    ct_colors <- gen_colors(color_conditions$bright,length(unique(plotx$CELL_TYPE)))
-    names(ct_colors) <- sort(unique((plotx$CELL_TYPE)))
+    Idents(data) <- data$INTEGRATED_CELL_TYPE
+    plotx <- gen10x_plotx(data, include_meta = T)
+    write.table(data.frame(plotx), paste(cdir, "61URSA_TABLE_AUTO_ANNOTATION_CELL_TYPE_META_",integration_name,"_",project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
 
-    results[['p56plots']] <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = project_name,
-                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+    ct_colors <- gen_colors(color_conditions$bright,length(unique(plotx$INTEGRATED_CELL_TYPE)))
+    names(ct_colors) <- sort(unique((plotx$INTEGRATED_CELL_TYPE)))
 
-    results[['p57plots']] <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CELL_TYPE", plot_title = project_name,
-                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+    somePDFPath = paste(cdir,"62URSA_PLOT_UMAP_AUTO_CELL_TYPE_IDENTIFICATION_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=12,pointsize=12)
+    print(plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "INTEGRATED_CELL_TYPE", plot_title = project_name,
+                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1))
+    dev.off()
 
-    results[['p58plots']] <- own_facet_scatter(plotx, feature1 = "UMAP_1", feature2 = "UMAP_2", isfacet = T,
+    somePDFPath = paste(cdir,"63URSA_PLOT_TSNE_AUTO_CELL_TYPE_IDENTIFICATION_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=12,pointsize=12)
+    print(plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "INTEGRATED_CELL_TYPE", plot_title = project_name,
+                                          col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1))
+    dev.off()
+
+    somePDFPath = paste(cdir,"64URSA_PLOT_UMAP_BY_GROUP_AUTO_CELL_TYPE_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=8,pointsize=12)
+    print(own_facet_scatter(plotx, feature1 = "UMAP_1", feature2 = "UMAP_2", isfacet = T,
                                                color_by = "CELL_TYPE", xlabel = "UMAP_1", ylabel = "UMAP_2",
                                                group_by = "GROUP", title = project_name,
-                                               col = ct_colors)
+                                               col = ct_colors))
+    dev.off()
 
     #################################### MEDIAN EXPRESSION #########################################################
 
     current <- group_medianexpr(current_out$current_data_markers, data, ref_group = integration_cluster, group = "seurat_clusters", cell_type = F)
     plot_median <- current$plot_median
     top_markers <- current$top_markers
+    plot_median[is.na(plot_median)] <- 0
 
-    results[['p59plots']] <- complex_heatmap(plot_median, col = color_conditions$BlueYellowRed)
+    somePDFPath = paste(cdir,"65URSA_PLOT_HEATMAP_MEDIAN_EXPR_CLUSTER_TOP_FOLDCHANGE_SIG_GENES_", integration_name, project_name, ".pdf", sep = "")
+    pdf(file=somePDFPath, width=8, height=10,pointsize=12)
+    print(complex_heatmap(plot_median, col = color_conditions$BlueYellowRed))
+    dev.off()
 
     #################################### TOP MARKERS + TSNE / UMAP ###################################################################
     current_clusters <- sort(as.numeric(as.character(unique(top_markers$cluster))), decreasing = F)
@@ -1211,31 +1315,37 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             legend.title = element_text(size =20, face = "bold"),
             legend.text = element_text(size = 15))
 
-    plotx <- gen10x_plotx(data, groups = NULL)
+    plotx <- gen10x_plotx(data, include_meta = T)
     plotx$CLUSTER <- data@meta.data[,integration_cluster]
     plotx$GROUP <- data$GROUP
 
     p2 <- plot_bygroup(plotx, x = "tSNE_1", y="tSNE_2", group = "CLUSTER",
                        plot_title = project_name,col = cluster_colors,numeric = T,
-                       annot = T, legend_position = "right", point_size = 3)
+                       annot = T, legend_position = "right", point_size = 1)
     p3 <- plot_bygroup(plotx, x = "UMAP_1", y="UMAP_2", group = "CLUSTER",
                        plot_title = project_name,col = cluster_colors,numeric = T,
-                       annot = T, legend_position = "right", point_size = 3)
+                       annot = T, legend_position = "right", point_size = 1)
 
-    results[['p60plots']] <- p1
-    results[['p602plots']] <- p2
-    results[['p603plots']] <- p3
+    somePDFPath = paste(cdir,"66URSA_PLOT_AVE_LOGFC_TOP_GENES_TSNE_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=9,pointsize=12)
+    grid.arrange(p1, p2, ncol = 2)
+    dev.off()
 
-    # grid.arrange(p1, p2, ncol = 2)
-    # grid.arrange(p1, p3, ncol = 2)
+    somePDFPath = paste(cdir,"67URSA_PLOT_AVE_LOGFC_TOP_GENES_UMAP_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=9,pointsize=12)
+    grid.arrange(p1, p3, ncol = 2)
+    dev.off()
 
     current_clusters <- sort(as.numeric(as.character(unique(top_markers$cluster))), decreasing = F)
     top_1_markers <- current_out$current_data_markers %>% group_by(cluster) %>% top_n(n = 1, eval(parse(text = wt)))
 
     Idents(data) <- "seurat_clusters"
-    results[['p61plots']] <- RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 4,
+    somePDFPath = paste(cdir,"68URSA_PLOT_RIDGE_TOP_FC_SIG_GENES_IN_CLUSTERS_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=18, height=length(unique(unlist(top_1_markers$gene)))/2*4,pointsize=12)
+    print(RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 4,
                                        cols = cluster_colors)+
-      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
     current <- data@meta.data
     total_counts <- data.frame(table(current[,integration_cluster]))
@@ -1248,7 +1358,9 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
     node_proportion <- current
 
-    results[['p62plots']] <- ggplot(node_proportion, aes(CLUSTER, PROPORTION, fill = SID))+
+    somePDFPath = paste(cdir,"69URSA_PLOT_NODE_SUMMARY_SAMPLE_PROPORTION_",integration_name, "_",project_name,".pdf", sep = "")
+    pdf(somePDFPath, width = 25, height = 20, pointsize = 10)
+      print(ggplot(node_proportion, aes(CLUSTER, PROPORTION, fill = SID))+
       geom_bar(stat="identity", alpha=0.8)+
       coord_polar()+
       scale_fill_viridis(discrete = T, option = "C")+
@@ -1267,7 +1379,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             panel.border = element_blank(),
-            panel.background = element_blank())
+            panel.background = element_blank()))
+      dev.off()
 
     current <- data@meta.data
     total_counts <- data.frame(table(current$CELL_TYPE))
@@ -1278,7 +1391,9 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     current$CELL_TYPE_COUNT <- total_counts[match(current$CELL_TYPE, total_counts$Var1),"Freq"]
     current$PROPORTION <- current$COUNT/current$CELL_TYPE_COUNT
 
-    results[['p63plots']] <- ggplot(current,aes(SID,PROPORTION,fill=CELL_TYPE))+
+    somePDFPath = paste(cdir,"70URSA_PLOT_CELL_TYPE_SUMMARY_SAMPLE_PROPORTION_",integration_name, "_",project_name,".pdf", sep = "")
+    pdf(somePDFPath, width = 12, height = 8, pointsize = 10)
+    print(ggplot(current,aes(SID,PROPORTION,fill=CELL_TYPE))+
       geom_bar(stat = "identity", position = "fill", color = "black", size = 1)+ #, color = "black", size = 1
       theme_classic()+
       # facet_wrap(~GROUP)+
@@ -1295,14 +1410,18 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             strip.text.y = element_text(size = 25),
             plot.title = element_text(size = 20, face=1, hjust = 0.5))+
       scale_fill_manual(values = ct_colors)+
-      guides(color=guide_legend(title="CELL TYPES", ncol = 1),fill = guide_legend(title="CELL TYPES", ncol = 1))
+      guides(color=guide_legend(title="CELL TYPES", ncol = 1),fill = guide_legend(title="CELL TYPES", ncol = 1)))
+    dev.off()
 
     #####################################################################################################################
     current <- group_medianexpr(current_out$current_data_markers, data, group = "CELL_TYPE", cell_type = T)
     plot_median_cell_type <- current$plot_median
     top_markers_cell_type <- current$top_markers
-
-    results[['p64plots']] <- complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed)
+    plot_median_cell_type[is.na(plot_median_cell_type)] <- 0
+    somePDFPath = paste(cdir,"71URSA_PLOT_HEATMAP_MEDIAN_EXPR_CELL_TYPE_TOP_FOLDCHANGE_SIG_GENES_", integration_name, project_name, ".pdf", sep = "")
+    pdf(file=somePDFPath, width=8, height=10,pointsize=12)
+    print(complex_heatmap(plot_median_cell_type, col = color_conditions$BlueYellowRed))
+    dev.off()
 
     p1 <- NULL
     p2 <- NULL
@@ -1328,19 +1447,26 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                        plot_title = integration_name,col = ct_colors,numeric = F,
                        annot = T, legend_position = "right", point_size = 1)
 
-    results[['p65plots']] <- p1
-    results[['p652plots']] <- p2
-    results[['p653plots']] <- p3
+    somePDFPath = paste(cdir,"72URSA_PLOT_AVE_LOGFC_TOP_GENES_TSNE_CELL_TYPES_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=24, height=ceiling(length(unique(plotx$CELL_TYPE))/3)*5,pointsize=12)
+    grid.arrange(p1, p2, ncol = 2)
+    dev.off()
 
-    # grid.arrange(p1, p2, ncol = 2)
-    # grid.arrange(p1, p3, ncol = 2)
+    somePDFPath = paste(cdir,"73URSA_PLOT_AVE_LOGFC_TOP_GENES_UMAP_CELL_TYPES_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=24, height=ceiling(length(unique(plotx$CELL_TYPE))/3)*5,pointsize=12)
+    grid.arrange(p1, p3, ncol = 2)
+    dev.off()
 
     current_out$current_data_markers$CELL_TYPE <- data@meta.data[match(current_out$current_data_markers$cluster, data@meta.data[,integration_cluster]),"CELL_TYPE"]
     top_1_markers <- current_out$current_data_markers %>% group_by(CELL_TYPE) %>% top_n(n = 1, eval(parse(text = wt)))
     Idents(data) <- "CELL_TYPE"
-    results[['p66plots']] <- RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 2,
+
+    somePDFPath = paste(cdir,"74URSA_PLOT_RIDGE_TOP_FC_SIG_GENES_CELL_TYPES_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=length(unique(unlist(top_1_markers$gene)))/2*6,pointsize=12)
+    print(RidgePlot(data, features = unique(unlist(top_1_markers$gene)), ncol = 2,
                                        cols = ct_colors)+
-      plot_annotation(title = integration_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+      plot_annotation(title = integration_name, theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
     current <- data@meta.data
     total_counts <- data.frame(table(current$CELL_TYPE))
@@ -1353,7 +1479,9 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
     node_proportion <- current
 
-    results[['p67plots']] <- ggplot(node_proportion, aes(CELL_TYPE, PROPORTION, fill = SID))+
+    somePDFPath = paste(cdir,"75URSA_PLOT_CELL_TYPE_SAMPLE_PROPORTION_",integration_name, "_",project_name,".pdf", sep = "")
+    pdf(somePDFPath, width = 25, height = 20, pointsize = 10)
+    print(ggplot(node_proportion, aes(CELL_TYPE, PROPORTION, fill = SID))+
       geom_bar(stat="identity", alpha=0.8)+
       coord_polar()+
       scale_fill_viridis(discrete = T)+
@@ -1372,7 +1500,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             panel.border = element_blank(),
-            panel.background = element_blank())
+            panel.background = element_blank()))
+    dev.off()
 
     Idents(data) <- integration_cluster
 
@@ -1383,49 +1512,41 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
     if(length(unique(data$GROUP)) > 1){
       current_out <- deanalysis(data, current_clusters, plot_title = project_name,group="GROUP",de_analysis = "finddegroup")
-      results[['p68data']] <- current_out$current_data_markers
+      current_data_markers <- current_out$current_data_markers
+      current_data_markers <- current_data_markers[order(current_data_markers$avg_log2FC, decreasing = T),]
+      write.table(current_data_markers, paste(cdir, "76URSA_TABLE_BY_CLUSTERS_TOP_MARKERS_DE_GROUPS_EACH_CLUSTER_",integration_name,"_",project_name,".txt", sep = ""), quote = F, row.names = F, sep = "\t")
+
       de_type <- current_out$de_type
       de_name <- current_out$de_name
       top1 <- current_out$top1
       topn <- current_out$topn
       current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
 
-      results[['p69plots']] <- DotPlot(data, features = unique(top1$gene), cols = cgroup_colors, dot.scale = 8,
+      somePNGPath <- paste(cdir,"76URSA_PLOT_CLUSTERS_BY_GROUP_TOP1_FEATURE_DIFFERENCE_COLOR_EXPR_",integration_name,"_",project_name,".png", sep = "")
+      png(somePNGPath, width = 2000, height = length(current_clusters)*length(unique(data$GROUP))*50, units = "px", res = 150)
+      print(DotPlot(data, features = unique(top1$gene), cols = cgroup_colors, dot.scale = 8,
                                        split.by = "GROUP", cluster.idents = F) + RotatedAxis()+ylab("CLUSTER+GROUP")+
-        plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5)))
+        plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5))))
+      dev.off()
 
+      somePDFPath = paste(cdir,"77URSA_PLOT_VIOLIN_TOP_",n,"_MARKERS_DE_GROUPS_EACH_CLUSTER_",integration_name,"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=16, height=10,pointsize=12)
       for(k in 1:length(current_clusters)){
         current <- topn[which(topn$cluster == current_clusters[k]),]
         current <- current[order(current$p_val_adj, decreasing = F),]
-        results[['p70plots']][[length(results[['p70plots']])+1]] <- VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",stack = T,flip = T,
+        print(VlnPlot(data, features = unique(current$gene), pt.size = 0, split.by = "GROUP",stack = T,flip = T,
                                                                             cols = cgroup_colors)&
           xlab("CLUSTERS")&
           plot_annotation(title = paste(project_name, ": CLUSTER ", current_clusters[k], sep = ""),
-                          theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold")))
-        names(results[['p70plots']])[length(results[['p70plots']])] <-paste("CLUSTER_",current_clusters[k], sep = "")
+                          theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold"))))
       }
+      dev.off()
 
+      somePDFPath = paste(cdir,"78URSA_PLOT_UMAP_DENSITY_TOP_1_MARKER_BY_DE_GROUP_EACH_CLUSTER_",integration_name,"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=10, height=5,pointsize=12)
       for(i in 1:length(current_out$featureplot)){
-        results[['p71plots']][[length(results[['p71plots']])+1]] <- current_out$featureplot[[i]]
-        names(results[['p71plots']])[length(results[['p71plots']])] <- names(current_out$featureplot)[i]
-
-      }
-
-      # current_clusters <- sort(as.numeric(as.character(unique(Idents(data)))), decreasing = F)
-      # Idents(data) <- integration_cluster
-      # current_out <- deanalysis(data, current_clusters, plot_title = project_name,group="GROUP",de_analysis = "findconservedmarkers")
-      # results[['p72data']] <- current_out$current_data_markers
-      # de_type <- current_out$de_type
-      # de_name <- current_out$de_name
-      # top1 <- current_out$top1
-      # topn <- current_out$topn
-      # current_clusters <- sort(as.numeric(as.character(unique(topn$cluster))), decreasing = F)
-      #
-      # for(i in 1:length(current_out$featureplot)){
-      #   results[['p73plots']][[length(results[['p73plots']])+1]] <- current_out$featureplot[[i]]
-      #   names(results[['p73plots']])[length(results[['p73plots']])] <- paste("CLUSTER_",names(current_out$featureplot)[i], sep = "")
-      # }
-
+        print(current_out$featureplot[[i]])}
+      dev.off()
     }
   }
 
@@ -1455,52 +1576,47 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     ccolors <- gen_colors(color_conditions$colorful,length(unique(mono3_current[[j]]@clusters$UMAP$clusters)))
     names(ccolors) <- sort(as.numeric(as.character(unique(mono3_current[[j]]@clusters$UMAP$clusters))))
 
-    results[['p72plots']][[j]] <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
-                                              group = "seurat_clusters", label_size = 7,
-                                              paste(annot_names[j],"\nTRAJECTORY - COLOR BY CLUSTERS"),
-                                              ccolors, length(ccolors))
-    names(results[['p72plots']])[j] <- names(data_current)[j]
+    p <- NULL
+    somePDFPath = paste(cdir,"79URSA_PLOT_UMAP_TRAJECTORY_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=10,pointsize=12)
+    p <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
+                      group = "seurat_clusters", label_size = 7,
+                      paste(annot_names[j],"\nTRAJECTORY - COLOR BY CLUSTERS"),
+                      ccolors, length(ccolors))
+    print(p)
+    dev.off()
 
-    results[['p73plots']][[j]] <- ggplotly(results[['p72plots']][[j]]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+    p <- ggplotly(p+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
                                              guides(color=guide_legend(title="CLUSTER"))+
                                              ggtitle(paste("<b>",names(data_current)[j],"</b>",sep = "")))
-    names(results[['p73plots']])[j] <- names(data_current)[j]
+    htmlwidgets::saveWidget(p, paste(cdir, "80URSA_PLOT_UMAP_TRAJECTORY_CLUSTERS_",annot_names[j],"_",project_name,".html", sep = ""))
 
-    results[['p74plots']][[j]] <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
+    p <- NULL
+    p <- plot_pseudo(mono3_current[[j]], reduction = "UMAP",
                                               group = "CELL_TYPE", label_size = 6,
                                               paste(annot_names[j],"\nTRAJECTORY - COLOR BY CELL TYPE"),
                                               color_conditions$tenx, length(unique(mono3_current[[j]]$CELL_TYPE)))
-    names(results[['p74plots']])[j] <- names(data_current)[j]
 
-    results[['p75plots']][[j]] <- ggplotly(results[['p74plots']][[j]]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+    somePDFPath = paste(cdir,"81URSA_PLOT_UMAP_TRAJECTORY_CELL_TYPE_",annot_names[j],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=10,pointsize=12)
+    print(p)
+    dev.off()
+
+    p <- ggplotly(p+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
                                              # guides(color=guide_legend(title=""))+
                                              ggtitle(paste("<b>",names(data_current)[j],"</b>",sep = "")))
-    names(results[['p75plots']])[j] <- names(data_current)[j]
-
-    results[['p76plots']][[j]] <- plot_cells(mono3_current[[j]],
-                                             color_cells_by = "partition",
-                                             group_label_size = 7,
-                                             graph_label_size = 3,
-                                             cell_size = 2,
-                                             cell_stroke = I(2/2),
-                                             alpha = 0.7,
-                                             trajectory_graph_segment_size = 1.5,
-                                             label_cell_groups=FALSE,
-                                             label_leaves=TRUE,
-                                             label_branch_points=TRUE)
-
-    results[['p76plots']][[j]] <- adjust_plot(results[['p76plots']][[j]],col = color_conditions$bright, n = length(unique(mono3_current[[j]]@clusters$UMAP$clusters)),
-                                              plot_title = paste(annot_names[j],"\nTRAJECTORY - COLOR BY PARTITION"))
-
-    names(results[['p76plots']])[j] <- names(data_current)[j]
+    htmlwidgets::saveWidget(p, paste(cdir, "82URSA_PLOT_UMAP_TRAJECTORY_CELL_TYPE_",annot_names[j],"_",project_name,".html", sep = ""))
 
     current_clusters <- sort(as.numeric(as.character(unique(mono3_current[[j]]@clusters$UMAP$clusters))), decreasing = F)
+
+    somePDFPath = paste(cdir,"83URSA_PLOT_UMAP_PSEUDOTIME_EACH_CLUSTER_AS_ROOT_", annot_names[j],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=10,pointsize=12)
     for(i in 1:length(current_clusters)){
       mono3_current[[j]] <- order_cells(mono3_current[[j]],
                                         root_pr_nodes=get_earliest_principal_node(mono3_current[[j]],
                                                                                   group = "seurat_clusters", group_element = current_clusters[i]))
-
-      results[['p77plots']][[length(results[['p77plots']])+1]] <- plot_cells(mono3_current[[j]],
+      p <- NULL
+      p <- plot_cells(mono3_current[[j]],
                                                                              color_cells_by = "pseudotime",
                                                                              group_label_size = 7,
                                                                              graph_label_size = 5,
@@ -1512,19 +1628,17 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                                                              label_leaves=FALSE,
                                                                              label_branch_points=FALSE)
 
-      results[['p77plots']][[length(results[['p77plots']])]] <- adjust_plot(results[['p77plots']][[length(results[['p77plots']])]], col = color_conditions$colorful, n = length(current_clusters),
+      p <- adjust_plot(p, col = color_conditions$colorful, n = length(current_clusters),
                                                                             plot_title = paste(annot_names[j],"\nPSEUDOTIME - ROOT: CLUSTER ", current_clusters[i], sep = ""),
                                                                             fill = T)
-
-      names(results[['p77plots']])[length(results[['p77plots']])] <- paste("CLUSTER_",current_clusters[i],"|",names(data_current)[j], sep = "")
+      print(p)
 
     }
+dev.off()
 
-    pseudo_para <- c("PSEUDOTIME_PC1","PSEUDOTIME_UMAP1","PSEUDOTIME_tSNE1")
-
-    # if(to_annotate[[j]] == TRUE){
-    chosen_para <- c("seurat_clusters", "CELL_TYPE")
-    chosen_para_names <- c("CLUSTERS", "CELL_TYPE")
+pseudo_para <- c("PSEUDOTIME_PC1","PSEUDOTIME_UMAP1","PSEUDOTIME_tSNE1")
+chosen_para <- c("seurat_clusters", "CELL_TYPE")
+chosen_para_names <- c("CLUSTERS", "CELL_TYPE")
 
     plotx <- data.frame(
       PSEUDOTIME_PC1 = rank(data_current[[j]]@reductions$pca@cell.embeddings[,"PC_1"]),
@@ -1532,28 +1646,32 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       PSEUDOTIME_tSNE1 = rank(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"]),
       data_current[[j]]@meta.data)
 
-    k <- 2
+    somePDFPath = paste(cdir,"84URSA_PLOT_PSEUDOTIME_RANKED_PCA_UMAP_TSNE_",annot_names[j],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=8, height=6,pointsize=12)
     for(m in 1:length(chosen_para)){
       for(n in 1:length(pseudo_para)){
-        results[['p78plots']][[length(results[['p78plots']])+1]] <- plot_bygroup(plotx, x = pseudo_para[n], y = chosen_para[m], group = chosen_para[m],
-                                                                                 plot_title = annot_names[j], col = if(chosen_para_names[m] == "CELL_TYPE"){color_conditions$tenx}else{color_conditions$colorful},
-                                                                                 annot = F, legend_position = "none", numeric = T)+
-          ylab(chosen_para_names[m])
-
-        names(results[['p78plots']])[length(results[['p78plots']])] <- paste(names(data_current)[j],"|",chosen_para_names[m],"|",pseudo_para[n], sep = "")
-
-        k <- k + 1
+        p <- NULL
+        p <- ggplot(plotx, aes_string(x = pseudo_para[n], y = chosen_para[m],
+                          colour = chosen_para[m])) +
+          geom_quasirandom(groupOnX = FALSE) +
+          scale_color_manual(values = color_conditions$manycolors) + theme_classic() +
+          xlab(pseudo_para[n]) + ylab(chosen_para_names[m]) +
+          ggtitle(annot_names[j])
+        print(p)
       }
     }
+dev.off()
 
-    # if(to_annotate[[j]] == TRUE){
+somePDFPath = paste(cdir,"85URSA_PLOT_UMAP_PSEUDOTIME_EVERY_CELL_TYPE_AS_ROOT_", annot_names[j],"_",project_name,".pdf", sep = "")
+pdf(file=somePDFPath, width=12, height=10,pointsize=12)
     current_cell_types <- sort(as.character(unique(colData(mono3_current[[j]])[,"CELL_TYPE"])))
     for(i in 1:length(current_cell_types)){
       mono3_current[[j]] <- order_cells(mono3_current[[j]],
                                         root_pr_nodes=get_earliest_principal_node(mono3_current[[j]],
                                                                                   group = "CELL_TYPE", group_element = current_cell_types[i]))
 
-      results[['p79plots']][[length(results[['p79plots']])+1]] <- plot_cells(mono3_current[[j]],
+      p <- NULL
+      p <- plot_cells(mono3_current[[j]],
                                                                              color_cells_by = "pseudotime",
                                                                              group_label_size = 7,
                                                                              graph_label_size = 5,
@@ -1565,15 +1683,17 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                                                              label_leaves=FALSE,
                                                                              label_branch_points=FALSE)
 
-      results[['p79plots']][[length(results[['p79plots']])]] <- adjust_plot(results[['p79plots']][[length(results[['p79plots']])]], col = color_conditions$tenx, n = length(current_cell_types),
+      p <- adjust_plot(p, col = color_conditions$tenx, n = length(current_cell_types),
                                                                             plot_title = paste(annot_names[j],"\nPSEUDOTIME - ROOT CELL TYPE: ", toupper(current_cell_types[i]), sep = ""),
                                                                             fill = T)
-      names(results[['p79plots']])[length(results[['p79plots']])] <- paste(names(data_current)[j],"|",toupper(current_cell_types[i]), sep = "")
+      print(p)
     }
+    dev.off()
 
     data_current[[j]] <- RunUMAP(data_current[[j]], n.components = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
 
-    results[['p80plots']][[j]] <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
+    p <- NULL
+    p <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
                                           data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_2"],
                                           data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_3"],
                                           color_group = data_current[[j]]@meta.data[,"CELL_TYPE"],
@@ -1584,11 +1704,13 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                           current_text= paste("Cluster ",data_current[[j]]$seurat_clusters,"\n",
                                                               "Cell: ",row.names(data_current[[j]]@meta.data),"\n",
                                                               data_current[[j]]@meta.data[,"CELL_TYPE"], sep = ""))
-    names(results[['p80plots']])[j] <- names(data_current)[j]
+
+    htmlwidgets::saveWidget(p, paste(cdir, "86URSA_PLOT_UMAP_INTERACTIVE_CELL_TYPES_",annot_names[j],"_",project_name,".html", sep = ""))
 
     data_current[[j]] <- RunTSNE(data_current[[j]], dim.embed = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
 
-    results[['p81plots']][[j]] <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
+    p <- NULL
+    p <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
                                           data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_2"],
                                           data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_3"],
                                           color_group = data_current[[j]]@meta.data[,"CELL_TYPE"],
@@ -1599,9 +1721,11 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                           current_text= paste("Cluster ",data_current[[j]]$seurat_clusters,"\n",
                                                               "Cell: ",row.names(data_current[[j]]@meta.data),"\n",
                                                               data_current[[j]]@meta.data[,"CELL_TYPE"], sep = ""))
-    names(results[['p81plots']])[j] <- names(data_current)[j]
 
-    results[['p82plots']][[j]] <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
+    htmlwidgets::saveWidget(p, paste(cdir, "87URSA_PLOT_TSNE_INTERACTIVE_CELL_TYPES_",annot_names[j],"_",project_name,".html", sep = ""))
+
+    p <- NULL
+    p <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
                                           data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_2"],
                                           data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_3"],
                                           color_group = data_current[[j]]$seurat_clusters,
@@ -1611,9 +1735,10 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                           lt = "CLUSTER", t1 = "UMAP_1",t2 = "UMAP_2", t3= "UMAP_3",
                                           current_text= paste("Cell: ",row.names(data_current[[j]]@meta.data),"\nCluster: ",
                                                               data_current[[j]]$seurat_clusters, sep = ""))
-    names(results[['p82plots']])[j] <- names(data_current)[j]
+    htmlwidgets::saveWidget(p, paste(cdir, "88URSA_PLOT_UMAP_INTERACTIVE_CLUSTERS_",annot_names[j],"_",project_name,".html", sep = ""))
 
-    results[['p83plots']][[j]] <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
+    p <- NULL
+    p <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
                                           data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_2"],
                                           data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_3"],
                                           color_group = data_current[[j]]$seurat_clusters,
@@ -1623,7 +1748,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                           lt = "CLUSTER", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
                                           current_text= paste("Cell: ",row.names(data_current[[j]]@meta.data),"\nCluster: ",
                                                               data_current[[j]]$seurat_clusters, sep = ""))
-    names(results[['p83plots']])[j] <- names(data_current)[j]
+    htmlwidgets::saveWidget(p, paste(cdir, "89URSA_PLOT_TSNE_INTERACTIVE_CLUSTERS_",annot_names[j],"_",project_name,".html", sep = ""))
 
     data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
     data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
@@ -1640,14 +1765,21 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       PSEUDOTIME_tSNE1 = rank(data@reductions$tsne@cell.embeddings[,"tSNE_1"]),
       data@meta.data)
 
+    somePDFPath = paste(cdir,"90URSA_PLOT_INTEGRATED_DATA_PSEUDOTIME_RANKED_PCA_UMAP_TSNE_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=8, height=6,pointsize=12)
     for(m in 1:length(chosen_para)){
       for(n in 1:length(pseudo_para)){
-        results[['p84plots']][[length(results[['p84plots']])+1]] <- plot_bygroup(plotx, x = pseudo_para[n], y = chosen_para[m], group = chosen_para[m],
-                                                                                 plot_title = project_name, col = NULL, annot = F, legend_position = "none", numeric = T)+
-          ylab(chosen_para_names[m])
-        names(results[['p84plots']])[length(results[['p84plots']])] <- paste(pseudo_para[n], "|", chosen_para_names[m],sep = "")
+        p <- NULL
+        p <- ggplot(plotx, aes_string(x = pseudo_para[n], y = chosen_para[m],
+                                      colour = chosen_para[m])) +
+          geom_quasirandom(groupOnX = FALSE) +
+          scale_color_manual(values = color_conditions$manycolors) + theme_classic() +
+          xlab(pseudo_para[n]) + ylab(chosen_para_names[m]) +
+          ggtitle(project_name)
+        print(p)
       }
     }
+    dev.off()
 
     if(integration_name == "SEURAT_INTEGRATED"){
       DefaultAssay(data) <- "integrated"
@@ -1675,49 +1807,50 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     mono3data@clusters@listData[["UMAP"]][["louvain_res"]] <- "NA"
     mono3data <- learn_graph(mono3data)
 
-    results[['p85plots']] <- plot_pseudo(mono3data, reduction = "UMAP",
+    p <- NULL
+    p <- plot_pseudo(mono3data, reduction = "UMAP",
                                          group = integration_cluster, label_size = 7,
-                                         # cell_size = 0.5,traj_size = 0.8,
                                          paste(project_name,"\nINTEGRATED TRAJECTORY - COLOR BY CLUSTERS"),
                                          color_conditions$colorful, length(unique(mono3data@clusters$UMAP$clusters)))+facet_wrap(~GROUP)
 
-    results[['p86plots']] <- ggplotly(results[['p85plots']]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
+    somePDFPath = paste(cdir,"91URSA_PLOT_INTEGRATED_DATA_UMAP_TRAJECTORY_CLUSTERS_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=9*length(unique(mono3data@colData$GROUP)), height=8,pointsize=12)
+    print(p)
+    dev.off()
+
+    p <- ggplotly(p+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
                                         guides(color=guide_legend(title="CLUSTER"))+
                                         ggtitle(paste("<b>",project_name,"</b>",sep = "")))
 
-    results[['p87plots']] <- plot_pseudo(mono3data, reduction = "UMAP",
+    htmlwidgets::saveWidget(p, paste(cdir, "92URSA_PLOT_INTEGRATED_DATA_UMAP_TRAJECTORY_CLUSTERS_",integration_name,"_",project_name,".html", sep = ""))
+
+    p <- NULL
+    p <- plot_pseudo(mono3data, reduction = "UMAP",
                                          group = "CELL_TYPE", label_size = 6,
                                          # cell_size = 0.5,traj_size = 0.8,
                                          paste(project_name,"\nINTEGRATED TRAJECTORY - COLOR BY CELL TYPE"),
                                          color_conditions$tenx, length(unique(mono3data$CELL_TYPE)))+
       facet_wrap(~GROUP)
 
-    results[['p88plots']] <- ggplotly(results[['p87plots']]+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
-                                        # guides(color=guide_legend(title=""))+
+    somePDFPath = paste(cdir,"93URSA_PLOT_INTEGRATED_DATA_UMAP_TRAJECTORY_CELL_TYPE_",integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=9*length(unique(mono3data@colData$GROUP)), height=8,pointsize=12)
+    print(p)
+    dev.off()
+
+    p <- ggplotly(p+theme(legend.position = "right", plot.margin=unit(c(1,5,1,1),"cm"))+
                                         ggtitle(paste("<b>",project_name,"</b>",sep = "")))
-
-    results[['p89plots']] <- plot_cells(mono3data,
-                                        color_cells_by = "partition",
-                                        group_label_size = 7,
-                                        graph_label_size = 3,
-                                        cell_size = 2,
-                                        cell_stroke = I(2/2),
-                                        alpha = 0.7,
-                                        trajectory_graph_segment_size = 1.5,
-                                        label_cell_groups=FALSE,
-                                        label_leaves=TRUE,
-                                        label_branch_points=TRUE)
-
-    results[['p89plots']] <- adjust_plot(results[['p89plots']],col = color_conditions$colorful, n = length(unique(mono3data@clusters$UMAP$clusters)),
-                                         plot_title = paste(project_name,"\nTRAJECTORY - COLOR BY PARTITION"))
+    htmlwidgets::saveWidget(p, paste(cdir, "94URSA_PLOT_INTEGRATED_DATA_UMAP_TRAJECTORY_CELL_TYPE_",integration_name,"_",project_name,".html", sep = ""))
 
     current_clusters <- sort(as.numeric(as.character(unique(mono3data@clusters$UMAP$clusters))), decreasing = F)
+
+    somePDFPath = paste(cdir,"95URSA_PLOT_INTEGRATED_DATA_UMAP_PSEUDOTIME_EVERY_CLUSTER_AS_ROOT_", integration_name,"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=9*length(unique(mono3data@colData$GROUP)), height=8,pointsize=12)
     for(i in 1:length(current_clusters)){
       mono3data <- order_cells(mono3data,
                                root_pr_nodes=get_earliest_principal_node(mono3data,
                                                                          group = "seurat_clusters", group_element = current_clusters[i]))
 
-      results[['p90plots']][[length(results[['p90plots']])+1]] <- plot_cells(mono3data,
+      p <- plot_cells(mono3data,
                                                                              color_cells_by = "pseudotime",
                                                                              group_label_size = 7,
                                                                              graph_label_size = 5,
@@ -1730,13 +1863,14 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                                                              label_branch_points=FALSE)+
         facet_wrap(~GROUP)
 
-      results[['p90plots']][[length(results[['p90plots']])]] <- adjust_plot(results[['p90plots']][[length(results[['p90plots']])]], col = color_conditions$colorful, n = length(current_clusters),
+      p <- adjust_plot(p, col = color_conditions$colorful, n = length(current_clusters),
                                                                             plot_title = paste(project_name,"\nPSEUDOTIME - ROOT: CLUSTER ", current_clusters[i], sep = ""),
                                                                             fill = T)
-      names(results[['p90plots']])[length(results[['p90plots']])] <- current_clusters[i]
+    print(p)
     }
+    dev.off()
 
-    if(reduction_method == "harmony"){
+    if(toupper(reduction_method) == "HARMONY"){
       DefaultAssay(data) <- 'RNA'
       data <- RunTSNE(data, dim.embed = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
       data <- RunUMAP(data, n.components = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
@@ -1747,7 +1881,8 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       data <- RunUMAP(data, n.components = 3, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
     }
 
-    results[['p91plots']] <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
+    p <- NULL
+    p <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
                                      data@reductions$umap@cell.embeddings[,"UMAP_2"],
                                      data@reductions$umap@cell.embeddings[,"UMAP_3"],
                                      color_group = data@meta.data[,"CELL_TYPE"],
@@ -1759,7 +1894,10 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                                          "Cell: ",row.names(data@meta.data),"\n",
                                                          data@meta.data[,"CELL_TYPE"], sep = ""))
 
-    results[['p92plots']] <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
+    htmlwidgets::saveWidget(p, paste(cdir, "96URSA_PLOT_UMAP_INTERACTIVE_CELL_TYPES_",integration_name,"_",project_name,".html", sep = ""))
+
+    p <- NULL
+    p <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
                                      data@reductions$tsne@cell.embeddings[,"tSNE_2"],
                                      data@reductions$tsne@cell.embeddings[,"tSNE_3"],
                                      color_group = data@meta.data[,"CELL_TYPE"],
@@ -1770,9 +1908,10 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                      current_text= paste("Cluster ",data@meta.data[,integration_cluster],"\n",
                                                          "Cell: ",row.names(data@meta.data),"\n",
                                                          data@meta.data[,"CELL_TYPE"], sep = ""))
+    htmlwidgets::saveWidget(p, paste(cdir, "97URSA_PLOT_TSNE_INTERACTIVE_CELL_TYPES_",integration_name,"_",project_name,".html", sep = ""))
 
-
-    results[['p93plots']] <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
+    p <- NULL
+    p <- plot_3d(data@reductions$umap@cell.embeddings[,"UMAP_1"],
                                      data@reductions$umap@cell.embeddings[,"UMAP_2"],
                                      data@reductions$umap@cell.embeddings[,"UMAP_3"],
                                      color_group = data@meta.data[,integration_cluster],
@@ -1783,7 +1922,10 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                      current_text= paste("Cell: ",row.names(data@meta.data),"\nCluster: ",
                                                          data@meta.data[,integration_cluster], sep = ""))
 
-    results[['p94plots']] <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
+    htmlwidgets::saveWidget(p, paste(cdir, "98URSA_PLOT_UMAP_INTERACTIVE_CLUSTERS_",integration_name,"_",project_name,".html", sep = ""))
+
+    p <- NULL
+    p <- plot_3d(data@reductions$tsne@cell.embeddings[,"tSNE_1"],
                                      data@reductions$tsne@cell.embeddings[,"tSNE_2"],
                                      data@reductions$tsne@cell.embeddings[,"tSNE_3"],
                                      color_group = data@meta.data[,integration_cluster],
@@ -1793,10 +1935,15 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                                      lt = "CLUSTER", t1 = "tSNE_1",t2 = "tSNE_2", t3= "tSNE_3",
                                      current_text= paste("Cell: ",row.names(data@meta.data),"\nCluster: ",
                                                          data@meta.data[,integration_cluster], sep = ""))
+    htmlwidgets::saveWidget(p, paste(cdir, "99URSA_PLOT_TSNE_INTERACTIVE_CLUSTERS_",integration_name,"_",project_name,".html", sep = ""))
+
   }
   ##########################################################################################
   #######################################################################################################################################
 
-
 }
+
+print("Completed!")
+
+saveRDS(data, paste(cdir, "100URSA_DATA_",project_name, ".RDS", sep = ""))
 
