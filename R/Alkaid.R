@@ -110,14 +110,12 @@ scATACPip <- function(project_name = "Ursa_scATAC",
 
     if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
       ref_genome <- "hg19"
-      load("DB/hg19_EnsDb.Hsapiens.v75.RData")
-      # load("/mnt/REFERENCE/hg19_EnsDb.Hsapiens.v75.RData")
+      ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
       seqlevelsStyle(ref_annot) <- "UCSC"
       genome(ref_annot) <- "hg19"
     }else if(length(grep("hg38|grch38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
       ref_genome <- "GRCh38.p12"
-      load("DB/hg38_EnsDb.Hsapiens.v86.RData")
-      # load("/mnt/REFERENCE/hg38_EnsDb.Hsapiens.v86.RData")
+      ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
       seqlevelsStyle(ref_annot) <- "UCSC"
       genome(ref_annot) <- "GRCh38.p12"
     }else{
@@ -649,12 +647,12 @@ scATACPip <- function(project_name = "Ursa_scATAC",
 
     if(length(grep("hg19",data_ref, ignore.case = T)) > 0){
       ref_genome <- "hg19"
-      load("DB/hg19_EnsDb.Hsapiens.v75.RData")
+      ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
       seqlevelsStyle(ref_annot) <- "UCSC"
       genome(ref_annot) <- "hg19"
     }else if(length(grep("hg38|grch38",data_ref, ignore.case = T)) > 0){
       ref_genome <- "GRCh38.p12"
-      load("DB/hg38_EnsDb.Hsapiens.v86.RData")
+      ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
       seqlevelsStyle(ref_annot) <- "UCSC"
       genome(ref_annot) <- "GRCh38.p12"
     }
