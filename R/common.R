@@ -638,7 +638,7 @@ group_medianexpr <- function(current_data_markers, data, ref_group = "seurat_clu
   top_markers$gene <- factor(top_markers$gene, levels = c(as.character(unlist(unique(top_markers[order(top_markers[,grep("log.*FC", colnames(current_data_markers), ignore.case = T)], decreasing = T),"gene"])))))
   # top_markers[,group] <- factor(top_markers[,group], levels = sort(as.numeric(as.character(unique(top_markers[,group])), decreasing = F)))
 
-  top_expr <- data.frame(t(GetAssayData(data)[which(row.names(GetAssayData(data)) %in% unique(top_markers$gene)),]))
+  top_expr <- data.frame(t(GetAssayData(data)[which(row.names(data) %in% unique(top_markers$gene)),]))
 
   if(cell_type == FALSE){
     top_expr$population <- data@meta.data[match(row.names(top_expr), row.names(data@meta.data)),group]
