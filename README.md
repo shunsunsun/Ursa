@@ -26,7 +26,7 @@ devtools::install_github('eudoraleer/Ursa')
 ```sh
 scRNASEQPip(project_name = 'My_scRNASeq', input_dir = '/home/input/', output_dir = '/home/output/', pheno_file = ‘/home/input/meta.txt’)
 ```
-##### (2) scATAC-sequencing
+##### (2) scATAC-sequencing*
 ```sh
 scATACPip(project_name = 'My_scATAC', input_dir = '/home/input/', output_dir = '/ home/output/', pheno_file = ‘/home/input/meta.txt’)
 ```
@@ -50,3 +50,5 @@ CyTOFPip(project_name = 'My_CyTOF', input_dir = '/home/input/', output_dir = '/ 
 ```sh
 FlowPip(project_name = 'My_Flow', input_dir = '/home/input/', output_dir = '/home/ output/', pheno_file = ‘/home/input/meta.txt’)
 ```
+
+###### *Strong recommend running this workflow on a computer with memory >=16GB due to the large size of this omics data
