@@ -150,7 +150,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
       recompute(gs[[i]][[1]])
       plotx <- gh_pop_get_data(gs[[i]], "root")
       print("post gh_pop_get_data")
-
+      print(flowCore::exprs(current_ff))
+      print("post flowCore::exprs")
       p2plots[[k]] <- autoplot(plotx, x = chnlx,y = chnly, bin = 300, strip.text = "gate") +
         geom_gate(g, colour = "red", size = 0.7) +
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
