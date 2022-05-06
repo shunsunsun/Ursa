@@ -699,7 +699,7 @@ dev.off()
   x$CLUSTER <- plotx[match(colnames(x), plotx$CELLL_ID),"CLUSTER"]
   marker_colors <- gen_colors(color_conditions$bright, nrow(x))
   names(marker_colors) <- row.names(x)
-  p17plots <- VlnPlot(x, group.by = "CLUSTER", features = row.names(x), stack = T, flip = T, cols = gen_colors(color_conditions$manycolors)) & xlab("CLUSTERS")
+  p17plots <- VlnPlot(x, group.by = "CLUSTER", features = row.names(x), stack = T, flip = T) & xlab("CLUSTERS")
 
   somePDFPath <- paste(cdir,"17URSA_FLOW_VIOLIN_MARKERS_IN_CLUSTERS_",project_name,".pdf", sep = "")
   pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
