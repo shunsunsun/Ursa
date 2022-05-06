@@ -60,9 +60,8 @@ color_ini <- function(){
   return(color_conditions)
 }
 
+#' @import xlsx
 readfile <- function(file_dir){
-  library("xlsx")
-
   if(length(grep("\\.csv$", file_dir, ignore.case = T)) > 0){
     if(ncol(read.csv(file_dir, header = T, sep = ";")) > 1){
       current <- suppressWarnings(read.csv(file_dir, header = T, sep = ";"))

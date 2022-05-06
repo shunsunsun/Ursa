@@ -229,9 +229,9 @@ create_centroids <- function(plotx, x, y, group){
 
 }
 
+#' @import ComplexHeatmap
 complex_heatmap <- function(x, legend_title = NULL, col_title = NULL, row_title = NULL,
                             col = rev(rainbow(10)),nrow_clus = 1, row_annot = NULL, legendtitle = "EXPRESSION"){
-  library("ComplexHeatmap")
   p <- Heatmap(x, name = legend_title, col = col, row_km = nrow_clus, right_annotation = row_annot,
                row_names_gp = gpar(fontsize = 8), row_names_side = "left",
                column_title = col_title,column_names_rot = 45,
@@ -245,10 +245,13 @@ violin_plot <- function(current, features, ncol = NULL, col, x_lab, log_status =
 }
 
 own_facet_scatter <- function(plotx, feature1, feature2, isfacet = T,point_size = 0.9,
-                              title, col=color_conditions$bright, color_by,
+                              title, col = NULL, color_by,
                               group_by = NULL, xlabel = feature1, ylabel = feature2,
                               strip_size = 15, legend_pos = "right", ncol = 2){
   # set.seed(2022)
+  if(is.null(col)){
+  col <- color_ini()$bright
+  }
   p <- ggplot(plotx, aes(x = plotx[,feature1], y = plotx[,feature2], color = plotx[,color_by])) +
     geom_point(size = point_size) +
     scale_color_manual(values = gen_colors(col, length(unique(plotx[,color_by])))) +
@@ -403,8 +406,12 @@ own_feature <- function(plotx, feature1, feature2, title_name, col, xlabel, ylab
   return(p)
 }
 
-own_2d_scatter <- function(current_data, reduction_method, split_var, plot_title){
-  p <- DimPlot(current_data, reduction = reduction_method,split.by = split_var, cols = color_conditions$bright) +
+own_2d_scatter <- function(current_data, reduction_method, split_var, plot_title, cols = NULL){
+  if(is.null(cols)){
+    cols <- color_ini()
+    cols <- cols$bright
+  }
+  p <- DimPlot(current_data, reduction = reduction_method,split.by = split_var, cols = cols) +
     ggtitle(paste(plot_title, sep = "")) +
     theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
           strip.text = element_text(size = 15),
@@ -747,10 +754,12 @@ adjust_plot <- function(p,col,n_col,plot_title="", fill = F){
   return(p)
 }
 
+#' @import plotly
 plot_3d <- function(d1, d2, d3, color_group, plot_title, n, lt,
-                    current_text,t1,t2,t3,col = color_conditions$general){
-
-  library(plotly)
+                    current_text,t1,t2,t3,col = NULL){
+  if(is.null(col)){
+    col <- color_ini()$general
+  }
   p <- plot_ly(x=d1,y=d2,z=d3,type="scatter3d", mode="markers",size = 0.2,
                colors = gen_colors(col, n),
                color=color_group,
