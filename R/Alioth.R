@@ -1,6 +1,6 @@
 ############################################################################################################
 # Ursa: an automated multi-omics package for single-cell analysis
-# Alkaid: scRNASEQ
+# Alioth: scRNASEQ
 # Version: V1.0.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
