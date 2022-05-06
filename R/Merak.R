@@ -301,11 +301,11 @@ FlowPip <- function(project_name = "Ursa_Flow",
 
   data_current <- as(data_current,"flowSet")
   sampleNames(data_current) <- sampleNames(fs_data)
-  pData(data_current)$name <- sampleNames(fs_data)
+  flowCore::pData(data_current)$name <- sampleNames(fs_data)
 
   data <- NULL
   for(i in 1:length(data_current)){
-    data <- rbind(data,data.frame(SAMPLE_ID = pData(data_current)$name[i], asinh(flowCore::exprs(data_current[[i]])/cofactor)))
+    data <- rbind(data,data.frame(SAMPLE_ID = flowCore::pData(data_current)$name[i], asinh(flowCore::exprs(data_current[[i]])/cofactor)))
   }
 
   current_names <- fs_data[[1]]@parameters@data[match(colnames(data)[grep("SAMPLE.*ID", colnames(data), ignore.case = T, invert = T)],fs_data[[1]]@parameters@data$name),"desc"]
@@ -498,7 +498,7 @@ FlowPip <- function(project_name = "Ursa_Flow",
 
   print("Running dimension reduction and clustering..")
   fs_data = as(data0,"flowSet")
-  pData(fs_data)$name <- samples
+  flowCore::pData(fs_data)$name <- samples
   som_input <- ReadInput(fs_data)
   set.seed(59)
   som <- BuildSOM(som_input)
