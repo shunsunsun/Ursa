@@ -143,20 +143,11 @@ FlowPip <- function(project_name = "Ursa_Flow",
       chnlx <- colnames(fs_data[[i]])[grep("FSC.*A", colnames(fs_data), ignore.case = T)]
       chnly <- colnames(fs_data[[i]])[grep("SSC.*A", colnames(fs_data), ignore.case = T)]
       local_min <- density(fs_data[[i]]@exprs[,chnl])$x[which(diff(sign(diff(density(fs_data[[i]]@exprs[,chnl])$y)))==+2)+1]
-      print("post local_min")
       current_ff <- gh_pop_get_data(gs[[i]])
-      print("post gh_pop_get_data")
       g <- openCyto:::.mindensity(current_ff, channels = chnl, filterId = "Exclude Debris", gate_range=c(local_min[1]-500,local_min[2]-1000))
-      print("post .mindensity")
       mylimits <- ggcyto_par_set(limits = "instrument")
-      print("post ggcyto_par_set")
-
       gs_pop_add(gs[[i]][[1]], g)
-      print("post gs_pop_add")
-
       recompute(gs[[i]][[1]])
-      print("post recompute")
-
       plotx <- gh_pop_get_data(gs[[i]], "root")
       print("post gh_pop_get_data")
 
@@ -176,11 +167,15 @@ FlowPip <- function(project_name = "Ursa_Flow",
               legend.title = element_text(size = 20),
               legend.text = element_text(size = 15),
               plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+      print("after creating ggplot2 object")
       lastGate <- "Exclude Debris"
       names(p2plots)[k] <- paste(cname,lastGate, sep = ":")
       # somePNGPath <- paste(cdir,"2URSA_FLOW_GATING_STRATEGY_PART1_",chnlx,"_VS_",chnly,"_",cname,".png", sep = "")
       # png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
+      print("before plot")
       print(p2plots[[k]])
+      print("after plot")
+
       # dev.off()
       k <- k + 1
     }
