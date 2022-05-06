@@ -958,7 +958,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     integrative_features <- SelectIntegrationFeatures(object.list = data_current)
     data_anchors <- FindIntegrationAnchors(object.list = data_current,
                                            reduction = "rpca", anchor.features = integrative_features)
-    data <- IntegrateData(anchorset = data_anchors, k.weight = ifelse(min(unlist(lapply(data_current, ncol))) > 100, 100, min(unlist(lapply(data_current, ncol)))))
+    data <- IntegrateData(anchorset = data_anchors, k.weight = 50)
     rm(data_anchors)
     DefaultAssay(data) <- "integrated"
     data <- ScaleData(data, verbose = FALSE)
