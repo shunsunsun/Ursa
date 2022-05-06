@@ -507,11 +507,10 @@ FlowPip <- function(project_name = "Ursa_Flow",
   codes <- som$map$codes
   nmc <- 90
   print("Running ConsensusClusterPlus..")
-  windows()
+  par(mar=c(1,1,1,1))
   mc <- ConsensusClusterPlus(t(codes), maxK = nmc, reps = 50,
                              pItem = 0.9, pFeature = 1, plot = NULL,
                              clusterAlg = "hc", innerLinkage = "complete", finalLinkage = "complete", distance = "euclidean", seed = 1234)
-  dev.off()
 
   Kvec = 2:nmc
   x1 = 0.1; x2 = 0.9
