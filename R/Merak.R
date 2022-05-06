@@ -321,6 +321,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
 
   channels <- as.character(unique(melt_data$CHANNEL))
   p3plots <- NULL
+  somePDFPath <- paste(cdir,"3URSA_FLOW_POST_FILTERING_ASINH_DENSITY_PLOT_CHANNELS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   for(j in 1:length(channels)){
     p3plots[[j]] <- ggplot(melt_data[melt_data$CHANNEL == channels[j],], aes(x = ASINH_COUNT, y = SAMPLE_ID, fill = SAMPLE_ID, color = SAMPLE_ID)) +
       geom_density_ridges(alpha = 0.8) +
@@ -330,11 +332,11 @@ FlowPip <- function(project_name = "Ursa_Flow",
       scale_color_manual(values = sample_colors)
     p3plots[[j]] <- adjust_theme(p3plots[[j]])
     names(p3plots)[j] <- channels[j]
-    somePNGPath <- paste(cdir,"3URSA_FLOW_POST_FILTERING_ASINH_DENSITY_PLOT_CHANNEL_",channels[[j]],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
+    # somePNGPath <- paste(cdir,"3URSA_FLOW_POST_FILTERING_ASINH_DENSITY_PLOT_CHANNEL_",channels[[j]],"_",project_name,".png", sep = "")
+    # png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
     print(p1plots[[j]])
-    dev.off()
   }
+  dev.off()
 
   p4plots <- ggplot(data_summary, aes(x = name, y = Count, fill = Population, group = Population)) +
     geom_bar(stat="identity",alpha=0.9, size=0.5, colour = "black") +
@@ -345,8 +347,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     scale_fill_manual(values = gating_colors)
   p4plots <- adjust_theme(p4plots, legend = "bottom") + guides(fill=guide_legend(ncol=1))
 
-  somePNGPath <- paste(cdir,"4URSA_FLOW_CELL_COUNT_SUMMARY_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4500, height =3000, units = "px", res = 300)
+  somePDFPath <- paste(cdir,"4URSA_FLOW_CELL_COUNT_SUMMARY_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p4plots)
   dev.off()
 
@@ -403,8 +405,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     scale_color_manual(values = group_colors)
   p5plots <- adjust_theme(p5plots)
 
-  somePNGPath <- paste(cdir,"5URSA_FLOW_SAMPLE_MDS_ASINH_MEDIAN_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
+  somePDFPath <- paste(cdir,"5URSA_FLOW_SAMPLE_MDS_ASINH_MEDIAN_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p5plots)
   dev.off()
 
@@ -418,8 +420,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     scale_color_manual(values = group_colors)
   p6plots <- adjust_theme(p6plots)
 
-  somePNGPath <- paste(cdir,"6URSA_FLOW_SAMPLE_PCA_ASINH_MEDIAN_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
+  somePDFPath <- paste(cdir,"6URSA_FLOW_SAMPLE_PCA_ASINH_MEDIAN_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p6plots)
   dev.off()
 
@@ -427,8 +429,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
   p7data <- (scale((p7data)))
   p7data <- t(scale(t(p7data)))
 
-  somePNGPath <- paste(cdir,"7URSA_FLOW_HEATMAP_SAMPLE_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".png", sep = "")
-  png(somePNGPath, width=3000, height=2000, units = "px", res = 400)
+  somePDFPath <- paste(cdir,"7URSA_FLOW_HEATMAP_SAMPLE_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   print(complex_heatmap(p7data, col = color_conditions$BlueYellowRed, legendtitle = "ZScore", col_title = project_name))
   dev.off()
 
@@ -436,8 +438,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
   colnames(p8data) <- paste(colnames(p8data), pheno_data[match(colnames(p8data), pheno_data$SAMPLE_ID),"GROUP"])
   p8data <- as.dendrogram(hclust(as.dist(1-cor((p8data)))))
 
-  somePNGPath <- paste(cdir,"8URSA_FLOW_DENDROGRAM_SAMPLES_",project_name,".png", sep = "")
-  png(somePNGPath, width=3000, height=2000, units = "px", res = 300)
+  somePDFPath <- paste(cdir,"8URSA_FLOW_DENDROGRAM_SAMPLES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   par(mar=c(3,4,1,6))
   print(plot(p8data, horiz = TRUE))
   dev.off()
@@ -475,8 +477,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     scale_fill_manual(values = group_colors)
   p9plots <- adjust_theme(p9plots, xangle = 45, hejust = 1, vejust = 1, xsize = 15)
 
-  somePNGPath <- paste(cdir,"9URSA_FLOW_BOXPLOT_NRS_SCORE_ASINH_MARKER_",project_name,".png", sep = "")
-  png(somePNGPath, width=4500, height=3000, units = "px", res = 350)
+  somePDFPath <- paste(cdir,"9URSA_FLOW_BOXPLOT_NRS_SCORE_ASINH_MARKER_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   print(p9plots)
   dev.off()
 
@@ -504,6 +506,7 @@ FlowPip <- function(project_name = "Ursa_Flow",
   som <- BuildSOM(som_input)
   codes <- som$map$codes
   nmc <- 90
+  plot.new()
   mc <- ConsensusClusterPlus(t(codes), maxK = nmc, reps = 50,
                              pItem = 0.9, pFeature = 1, plot = NULL,
                              clusterAlg = "hc", innerLinkage = "complete", finalLinkage = "complete", distance = "euclidean", seed = 1234)
@@ -554,8 +557,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
       box.padding = 0.3, size = 4, colour = "red")+
     geom_point(colour = ifelse(PAC$K == chosen_k, "red", "grey"), size = ifelse(PAC$K == chosen_k, 5, 2))
 
-  somePNGPath <- paste(cdir,"10URSA_FLOW_PAC_CHOSEN_",chosen_k,"_CLUSTERS_",project_name,".png", sep = "")
-  png(somePNGPath, width=2000, height=1500, res = 300)
+  somePDFPath <- paste(cdir,"10URSA_FLOW_PAC_CHOSEN_",chosen_k,"_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p10plots)
   dev.off()
 
@@ -611,8 +614,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
                            col = cluster_colors, annot = F, legend_position = "right",
                            numeric = T, point_size = 0.2, label_size = 6, legendsize = 15)
 
-  somePNGPath = paste(cdir,"11URSA_FLOW_UMAP_CLUSTERS_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000,units = "px", res = 300)
+  somePDFPath <- paste(cdir,"11URSA_FLOW_UMAP_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p11plots)
   dev.off()
 
@@ -624,8 +627,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     ggtitle(paste("UMAP - CLUSTER (BY SAMPLES): ",project_name, sep = ""))
   p12plots <- adjust_theme(p12plots)
 
-  somePNGPath = paste(cdir,"12URSA_FLOW_UMAP_CLUSTERS_BY_SAMPLES_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = ceiling(length(unique(plotx$SAMPLE_ID))/4)*800,units = "px", res = 300)
+  somePDFPath <- paste(cdir,"12URSA_FLOW_UMAP_CLUSTERS_BY_SAMPLES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=ceiling(length(unique(plotx$SAMPLE_ID))/4)*2,pointsize=12)
   print(p12plots)
   dev.off()
 
@@ -635,14 +638,14 @@ FlowPip <- function(project_name = "Ursa_Flow",
                            numeric = T, point_size = 0.2, label_size = 6, legendsize = 15)
   p13plots <- adjust_theme(p13plots)
 
-  somePNGPath = paste(cdir,"13URSA_FLOW_PCA_CLUSTERS_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000,units = "px", res = 300)
+  somePDFPath <- paste(cdir,"13URSA_FLOW_PCA_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p13plots)
   dev.off()
 
   p14data <- plot_median
-  somePNGPath <- paste(cdir,"14URSA_FLOW_HEATMAP_CLUSTER_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".png", sep = "")
-  png(somePNGPath, width=3000, height=2000, units = "px", res = 400)
+  somePDFPath <- paste(cdir,"14URSA_FLOW_HEATMAP_CLUSTER_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   print(complex_heatmap(p14data, col = color_conditions$BlueYellowRed, legendtitle = "ZScore", col_title = project_name))
   dev.off()
 
@@ -657,8 +660,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     scale_color_gradientn(colors = gen_colors(c("blue","cyan","green","yellow","orange","red","red4"), 100))
   p15plots <- adjust_theme(p15plots)
 
-  somePNGPath = paste(cdir,"15URSA_FLOW_UMAP_MARKER_EXPRESSIONS_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = 1200*ceiling(length(unique(melt_data$Marker))/3),units = "px", res = 200)
+  somePDFPath <- paste(cdir,"15URSA_FLOW_UMAP_MARKER_EXPRESSIONS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=3*ceiling(length(unique(melt_data$Marker))/3),pointsize=12)
   print(p15plots)
   dev.off()
 
@@ -679,8 +682,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
     theme_classic()
   p16plots <- adjust_theme(p16plots)
 
-  somePNGPath = paste(cdir,"16URSA_FLOW_SAMPLE_PROPORTIONS_IN_CLUSTERS_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000,units = "px", res = 300)
+  somePDFPath <- paste(cdir,"16URSA_FLOW_SAMPLE_PROPORTIONS_IN_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p16plots)
   dev.off()
 
@@ -689,8 +692,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
   names(marker_colors) <- row.names(x)
   p17plots <- VlnPlot(x, group.by = "CLUSTER", features = row.names(x), stack = T, flip = T) & xlab("CLUSTERS")
 
-  somePNGPath = paste(cdir,"17URSA_FLOW_VIOLIN_MARKERS_IN_CLUSTERS_",project_name,".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000,units = "px", res = 300)
+  somePDFPath <- paste(cdir,"17URSA_FLOW_VIOLIN_MARKERS_IN_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p17plots)
   dev.off()
 
