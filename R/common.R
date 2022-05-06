@@ -168,8 +168,8 @@ plot_bygroup <- function(plotx, x, y, group, plot_title, col = NULL, annot = TRU
       theme_classic() +
       xlab(x) + ylab(y) +
       ggtitle(plot_title) +
-      theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
-            strip.text = element_text(size = 25),
+      theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+            strip.text = element_text(size = 20),
             legend.position = legend_position,
             legend.title = element_blank(),
             legend.text = element_text(size = legendsize),
