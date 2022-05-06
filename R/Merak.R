@@ -142,15 +142,24 @@ FlowPip <- function(project_name = "Ursa_Flow",
       chnl <- colnames(fs_data[[i]])[grep("FSC.*A", colnames(fs_data[[i]]), ignore.case = T)]
       chnlx <- colnames(fs_data[[i]])[grep("FSC.*A", colnames(fs_data), ignore.case = T)]
       chnly <- colnames(fs_data[[i]])[grep("SSC.*A", colnames(fs_data), ignore.case = T)]
-      print(fs_data[[i]])
-      print("Testing exprs..")
       local_min <- density(fs_data[[i]]@exprs[,chnl])$x[which(diff(sign(diff(density(fs_data[[i]]@exprs[,chnl])$y)))==+2)+1]
+      print("post local_min")
       current_ff <- gh_pop_get_data(gs[[i]])
+      print("post gh_pop_get_data")
       g <- openCyto:::.mindensity(current_ff, channels = chnl, filterId = "Exclude Debris", gate_range=c(local_min[1]-500,local_min[2]-1000))
+      print("post .mindensity")
       mylimits <- ggcyto_par_set(limits = "instrument")
+      print("post ggcyto_par_set")
+
       gs_pop_add(gs[[i]][[1]], g)
+      print("post gs_pop_add")
+
       recompute(gs[[i]][[1]])
+      print("post recompute")
+
       plotx <- gh_pop_get_data(gs[[i]], "root")
+      print("post gh_pop_get_data")
+
       p2plots[[k]] <- autoplot(plotx, x = chnlx,y = chnly, bin = 300, strip.text = "gate") +
         geom_gate(g, colour = "red", size = 0.7) +
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
