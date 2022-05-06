@@ -149,16 +149,13 @@ FlowPip <- function(project_name = "Ursa_Flow",
       gs_pop_add(gs[[i]][[1]], g)
       recompute(gs[[i]][[1]])
       plotx <- gh_pop_get_data(gs[[i]], "root")
-      print("post gh_pop_get_data")
-      print(exprs(current_ff))
-      print("post flowCore::exprs")
       p2plots[[k]] <- autoplot(plotx, x = chnlx,y = chnly, bin = 300, strip.text = "gate") +
         geom_gate(g, colour = "red", size = 0.7) +
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
         theme_classic(base_size = 20) + ggtitle(paste("STEP 1: Exclude Debris",sep = ""))+
         scale_fill_gradientn(colours = color_conditions$flow)+
-        ggcyto_par_set(limits = list(x = c(-10,max(exprs(current_ff)[,chnlx])),
-                                     y = c(-10, max(exprs(current_ff)[,chnly]))))+
+        ggcyto_par_set(limits = list(x = c(-10,max(flowCore::exprs(current_ff)[,chnlx])),
+                                     y = c(-10, max(flowCore::exprs(current_ff)[,chnly]))))+
         theme(strip.text = element_text(size = 20, face = "bold"),
               strip.background = element_blank(),
               axis.text.x = element_text(size = 15),
@@ -196,8 +193,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
         theme_classic(base_size = 20) + ggtitle(paste("STEP 2: Exclude Doublets or Multiplets",sep = ""))+
         scale_fill_gradientn(colours = color_conditions$flow)+
-        ggcyto_par_set(limits = list(x = c(-10,max(exprs(current_ff)[,chnlx])),
-                                     y = c(-10, max(exprs(current_ff)[,chnly]))))+
+        ggcyto_par_set(limits = list(x = c(-10,max(flowCore::exprs(current_ff)[,chnlx])),
+                                     y = c(-10, max(flowCore::exprs(current_ff)[,chnly]))))+
         theme(strip.text = element_text(size = 20, face = "bold"),
               strip.background = element_blank(),
               axis.text.x = element_text(size = 15),
@@ -231,8 +228,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
         theme_classic(base_size = 20) + ggtitle(paste("STEP 2: Exclude Doublets or Multiplets",sep = ""))+
         scale_fill_gradientn(colours = color_conditions$flow)+
-        ggcyto_par_set(limits = list(x = c(-10,max(exprs(current_ff)[,chnlx])),
-                                     y = c(-10, max(exprs(current_ff)[,chnly]))))+
+        ggcyto_par_set(limits = list(x = c(-10,max(flowCore::exprs(current_ff)[,chnlx])),
+                                     y = c(-10, max(flowCore::exprs(current_ff)[,chnly]))))+
         theme(strip.text = element_text(size = 20, face = "bold"),
               strip.background = element_blank(),
               axis.text.x = element_text(size = 15),
@@ -266,8 +263,8 @@ FlowPip <- function(project_name = "Ursa_Flow",
         geom_stats(size = 8,adjust = 0.5, label.padding = unit(0.05, "lines"), digits = 4) +
         theme_classic(base_size = 20) + ggtitle(paste("STEP 4: Single Cells Gate 2",sep = ""))+
         scale_fill_gradientn(colours = color_conditions$flow)+
-        ggcyto_par_set(limits = list(x = c(-10,max(exprs(current_ff)[,chnlx])),
-                                     y = c(-10, max(exprs(current_ff)[,chnly]))))+
+        ggcyto_par_set(limits = list(x = c(-10,max(flowCore::exprs(current_ff)[,chnlx])),
+                                     y = c(-10, max(flowCore::exprs(current_ff)[,chnly]))))+
         theme(strip.text = element_text(size = 20, face = "bold"),
               strip.background = element_blank(),
               axis.text.x = element_text(size = 15),
@@ -308,7 +305,7 @@ FlowPip <- function(project_name = "Ursa_Flow",
 
   data <- NULL
   for(i in 1:length(data_current)){
-    data <- rbind(data,data.frame(SAMPLE_ID = pData(data_current)$name[i], asinh(exprs(data_current[[i]])/cofactor)))
+    data <- rbind(data,data.frame(SAMPLE_ID = pData(data_current)$name[i], asinh(flowCore::exprs(data_current[[i]])/cofactor)))
   }
 
   current_names <- fs_data[[1]]@parameters@data[match(colnames(data)[grep("SAMPLE.*ID", colnames(data), ignore.case = T, invert = T)],fs_data[[1]]@parameters@data$name),"desc"]
