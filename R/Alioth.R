@@ -90,8 +90,6 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
   hpca.se <- HumanPrimaryCellAtlasData()
   s.genes <- cc.genes$s.genes
   g2m.genes <- cc.genes$g2m.genes
-  source("ini.R")
-  source("common.R")
   pheno_data <- pheno_ini(pheno_file, pipeline = "scRNASEQ", isDir = T)
   pheno_data$SID <- paste(pheno_data$SAMPLE_ID, pheno_data$GROUP, sep = "_")
   color_conditions <- color_ini()
