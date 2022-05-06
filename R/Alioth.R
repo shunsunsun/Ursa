@@ -339,7 +339,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
         metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
-        somePDFPath = paste(cdir,"8URSA_PLOT_NO_CELL_CYCLE_REGRESSION_UMAP_POST_CC_",gsub("\\s+","_NO_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
+        somePDFPath = paste(cdir,"8URSA_PLOT_NO_CELL_CYCLE_REGRESSION_UMAP_POST_CC_NO_REGRESSION_",annot_names[j],"_",project_name,".pdf", sep = "")
         pdf(file=somePDFPath, width=10, height=ceiling(length(metrics))/3*5,pointsize=12)
         print(FeaturePlot(data_current[[j]],
                           reduction = "umap",
