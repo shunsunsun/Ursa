@@ -507,11 +507,12 @@ FlowPip <- function(project_name = "Ursa_Flow",
   codes <- som$map$codes
   nmc <- 90
   print("Running ConsensusClusterPlus..")
-  par(mar=c(1,1,1,1))
+  somePDFPath <- paste(cdir,"10CONSENSUS_PLOTS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=12,pointsize=12)
   mc <- ConsensusClusterPlus(t(codes), maxK = nmc, reps = 50,
                              pItem = 0.9, pFeature = 1, plot = NULL,
                              clusterAlg = "hc", innerLinkage = "complete", finalLinkage = "complete", distance = "euclidean", seed = 1234)
-
+dev.off()
   Kvec = 2:nmc
   x1 = 0.1; x2 = 0.9
   PAC = rep(NA,length(Kvec))
@@ -559,7 +560,7 @@ FlowPip <- function(project_name = "Ursa_Flow",
       box.padding = 0.3, size = 4, colour = "red")+
     geom_point(colour = ifelse(PAC$K == chosen_k, "red", "grey"), size = ifelse(PAC$K == chosen_k, 5, 2))
 
-  somePDFPath <- paste(cdir,"10URSA_FLOW_PAC_CHOSEN_",chosen_k,"_CLUSTERS_",project_name,".pdf", sep = "")
+  somePDFPath <- paste(cdir,"10URSA_FLOW_PAC_CHOSEN_",chosen_k,"_BASED_ON_CONSENSUS_CLUSTERS_",project_name,".pdf", sep = "")
   pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
   print(p10plots)
   dev.off()
