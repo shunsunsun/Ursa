@@ -339,9 +339,12 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   som <- BuildSOM(som_input)
   codes <- som$map$codes
   nmc <- 90
+  somePDFPath <- paste(cdir,"9URSA_PLOT_CyTOF_CONSENSUS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=12,pointsize=12)
   mc <- ConsensusClusterPlus(t(codes), maxK = nmc, reps = 50,
                              pItem = 0.9, pFeature = 1, plot = NULL,
                              clusterAlg = "hc", innerLinkage = "complete", finalLinkage = "complete", distance = "euclidean", seed = 1234)
+  dev.off()
   Kvec = 2:nmc
   x1 = 0.1; x2 = 0.9
   PAC = rep(NA,length(Kvec))
@@ -768,7 +771,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   print(p22plots)
   dev.off()
 
-  saveRDS(data, paste(cdir,"23URSA_CyTOF_DATA_",project_name,".RDS", sep = ""))
+  saveRDS(data, paste(cdir,"23URSA_DATA_CyTOF_",project_name,".RDS", sep = ""))
   print("Completed!")
 
 }

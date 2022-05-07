@@ -70,7 +70,7 @@ plot_ploidy_binary <- function(results, output_dir){
   p2 <- p2 + theme(legend.position = "none")
   p3 <- plot_grid(p2, p1, align = "h", ncol = 2, axis = "tb", rel_widths = c(1,20), rel_heights = c(1,1))
 
-  somePNGPath <- paste(output_dir,"5SCA_BINARY_CNV_EVENTS_BY_CLUSTERS_",results@project,".png", sep = "")
+  somePNGPath <- paste(output_dir,"5URSA_PLOT_scCNV_BINARY_CNV_EVENTS_BY_CLUSTERS_",results@project,".png", sep = "")
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
   print(plot_grid(p3, legend, nrow = 1, rel_widths = c(10,1),rel_heights = c(0.1, 1)))
   dev.off()
@@ -107,7 +107,7 @@ plot_selected_chroms <- function(results, output_dir){
   p2 <- p2 + theme(legend.position = "none")
   p3 <- plot_grid(p2, p1, align = "h", ncol = 2, axis = "tb", rel_widths = c(1,20), rel_heights = c(1,1))
 
-  somePNGPath <- paste(output_dir,"6SCA_PLOIDY_INFO_TOP_50_CNVs_",results@project,".png", sep = "")
+  somePNGPath <- paste(output_dir,"6URSA_PLOT_scCNV_PLOIDY_INFO_TOP_50_CNVs_",results@project,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
   print(plot_grid(p3, legend, nrow = 1, rel_widths = c(10,1),rel_heights = c(0.1, 1)))
   dev.off()

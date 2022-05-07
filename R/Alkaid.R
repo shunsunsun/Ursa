@@ -171,7 +171,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     results[['p1plots']][[i]] <- p
     names(results[['p1plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"1URSA_PLOT_NORM_TSS_ENRICHMENT_SCORES_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"1URSA_PLOT_scATAC_NORM_TSS_ENRICHMENT_SCORES_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
     print(results[['p1plots']][[i]]+ggtitle(paste("TSS Enrichment: ", pheno_data[i,"SID"], sep = "")))
     dev.off()
@@ -191,7 +191,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     results[['p2plots']][[i]] <- p
     names(results[['p2plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"2URSA_PLOT_FRAGMENT_LENGTH_PERIODICITY_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"2URSA_PLOT_scATAC_FRAGMENT_LENGTH_PERIODICITY_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
     print(results[['p2plots']][[i]]+ggtitle(paste("Fragment Length Periodicity: ", pheno_data[i,"SID"], sep = "")))
     dev.off()
@@ -210,7 +210,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
                                              col = sample_colors, x_lab = "SID", log_status = TRUE)
     names(results[['p3plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"3URSA_PLOT_QUALITY_CONTROL_PEAKS_LOGSCALE_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"3URSA_PLOT_scATAC_QUALITY_CONTROL_PEAKS_LOGSCALE_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 2000, height = 1000, units = "px", res = 150)
     print(results[['p3plots']][[i]])
     dev.off()
@@ -260,7 +260,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     results[['p4plots']][[i]] <- DepthCor(current_seurat)
     names(results[['p4plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"4URSA_PLOT_CORRELATION_SEQUENCING_DEPTH_LSI_COMPONENTS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"4URSA_PLOT_scATAC_CORRELATION_SEQUENCING_DEPTH_LSI_COMPONENTS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 2000, height = 1000, units = "px", res = 300)
     print(results[['p4plots']][[i]])
     dev.off()
@@ -308,7 +308,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       results[['p6data']][[i]] <- da_peaks
       names(results[['p6data']])[i] <- pheno_data[i,"SID"]
 
-      write.csv(results[['p6data']][[i]], paste(cdir, "6URSA_TABLE_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+      write.csv(results[['p6data']][[i]], paste(cdir, "6URSA_TABLE_scATAC_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
 
       n <- 6
       topn <- split(da_peaks, da_peaks$cluster)
@@ -319,7 +319,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       topn <- do.call(rbind.data.frame, topn)
       results[['p7data']][[i]] <- topn
       names(results[['p7data']])[i] <- pheno_data[i,"SID"]
-      write.csv(results[['p7data']][[i]], paste(cdir, "7URSA_TABLE_TOP_",n,"_PEAKS_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+      write.csv(results[['p7data']][[i]], paste(cdir, "7URSA_TABLE_scATAC_TOP_",n,"_PEAKS_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
 
       closest_genes <- NULL
       cclusters <- unique(topn$cluster)
@@ -330,7 +330,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       }
       results[['p8data']][[i]] <- closest_genes
       names(results[['p8data']])[i] <- pheno_data[i,"SID"]
-      write.csv(results[['p8data']][[i]], paste(cdir, "8URSA_TABLE_CLOSEST_GENE_NEAR_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+      write.csv(results[['p8data']][[i]], paste(cdir, "8URSA_TABLE_scATAC_CLOSEST_GENE_NEAR_TOP_PEAKS_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
     }
 
     print(paste("Done with top peaks search for ", pheno_data[i,"FILE"], "..", sep = ""))
@@ -350,7 +350,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     current_data_markers <- current_data_markers[order(current_data_markers$p_val_adj, decreasing = F),]
     results[['p9data']][[i]] <- current_data_markers
     names(results[['p9data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p9data']][[i]], paste(cdir, "9URSA_TABLE_TOP_GENE_ACTIVITY_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+    write.csv(results[['p9data']][[i]], paste(cdir, "9URSA_TABLE_scATAC_TOP_GENE_ACTIVITY_IN_CLUSTERS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
 
     DefaultAssay(current_seurat) <- "ACTIVITY"
     wt <- colnames(da_peaks)[grep("log.*FC", colnames(da_peaks), ignore.case = T)]
@@ -404,7 +404,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
           plot_annotation(title = paste("TOP PEAK AND GENE ACTIVITY\n",pheno_data[i,"SID"], ": CLUSTER ", clusters[k], sep = ""),
                           theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
         names(results[['p10plots']])[length(results[['p10plots']])] <- paste(pheno_data[i,"SID"],"|","CLUSTER_",clusters[k],sep = "")
-        somePNGPath <- paste(cdir,"10URSA_PLOT_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP1_PEAK_TOP1_GENE_ACTIVITY_IN_CLUSTER_",clusters[k],"_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+        somePNGPath <- paste(cdir,"10URSA_PLOT_scATAC_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP1_PEAK_TOP1_GENE_ACTIVITY_IN_CLUSTER_",clusters[k],"_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
         png(somePNGPath, width = 4000, height = 4000*5/6, units = "px", res = 300)
         print(results[['p10plots']][[length(results[['p10plots']])]])
         dev.off()
@@ -420,7 +420,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     topn_genes <- do.call(rbind.data.frame, topn_genes)
     results[['p11data']][[i]] <- topn_genes
     names(results[['p11data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p11data']][[i]], paste(cdir, "11URSA_TABLE_TOP_",n,"_GENES_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+    write.csv(results[['p11data']][[i]], paste(cdir, "11URSA_TABLE_scATAC_TOP_",n,"_GENES_IN_CLUSTERS_EASY_TABLE_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
 
 
     print(paste("Add motif information for ", pheno_data[i,"FILE"], "..", sep = ""))
@@ -457,7 +457,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     results[['p12plots']][[i]] <- p
     names(results[['p12plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"12URSA_PLOT_",toupper(current_assay),"_TOP_",used_type,"_GENES_FOOTPRINTING_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"12URSA_PLOT_scATAC_",toupper(current_assay),"_TOP_",used_type,"_GENES_FOOTPRINTING_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height = 4000, units = "px", res = 250)
     print(results[['p12plots']][[i]])
     dev.off()
@@ -468,7 +468,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     enriched.motifs <- FindMotifs(object = current_seurat,features = da_peaks[which(da_peaks$p_val_adj < p_thresh),"gene"])
     results[['p13data']][[i]] <- enriched.motifs
     names(results[['p13data']])[i] <- pheno_data[i,"SID"]
-    write.csv(results[['p13data']][[i]], paste(cdir, "13URSA_TABLE_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
+    write.csv(results[['p13data']][[i]], paste(cdir, "13URSA_TABLE_scATAC_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],".csv",sep = ""), row.names = F, quote = F)
 
     n <- 10
     results[['p14plots']][[i]] <- MotifPlot(object = current_seurat, motifs = rownames(enriched.motifs)[1:n])+
@@ -477,7 +477,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     results[['p14plots']][[i]] <- adjust_theme(results[['p14plots']][[i]], xsize = 12, title_size = 20, strip_size = 15)
     names(results[['p14plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"14URSA_PLOT_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"14URSA_PLOT_scATAC_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height = 2800, units = "px", res = 300)
     print(results[['p14plots']][[i]])
     dev.off()
@@ -509,7 +509,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
                       theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
     names(results[['p15plots']])[i] <- pheno_data[i,"SID"]
 
-    somePNGPath <- paste(cdir,"15URSA_PLOT_UMAP_VS_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"15URSA_PLOT_scATAC_UMAP_VS_TOP_ENRICHED_MOTIFS_",pheno_data[i,"SID"],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height = 2000, units = "px", res = 200)
     print(results[['p15plots']][[i]])
     dev.off()
@@ -582,7 +582,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     data_markers <- data_markers[data_markers$p_val_adj < p_thresh,]
     data_markers <- data_markers[order(data_markers$p_val_adj, decreasing = F),]
     results[['data_markers']] <- data_markers
-    write.csv(results[['data_markers']], paste(cdir, "16URSA_TABLE_TOP_PEAKS_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
+    write.csv(results[['data_markers']], paste(cdir, "16URSA_TABLE_scATAC_TOP_PEAKS_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
 
     plotx <- data.frame(UMAP_1 = data@reductions$umap@cell.embeddings[,"UMAP_1"],
                         UMAP_2 = data@reductions$umap@cell.embeddings[,"UMAP_2"],
@@ -601,7 +601,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
 
     results[['p16plots']] <- p1_umap+p2_umap
 
-    somePNGPath <- paste(cdir,"16URSA_PLOT_UMAP_INTEGRATED_ATAC_SAMPLES_AUTOCLUST_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"16URSA_PLOT_scATAC_UMAP_INTEGRATED_ATAC_SAMPLES_AUTOCLUST_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height = 1800, units = "px", res = 200)
     print(results[['p16plots']])
     dev.off()
@@ -619,7 +619,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     }
 
     results[['p17plots']] <- plots
-    somePNGPath <- paste(cdir,"17URSA_PLOT_INTEGRATED_ATAC_SAMPLES_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"17URSA_PLOT_scATAC_INTEGRATED_ATAC_SAMPLES_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height = ceiling(length(top1$gene)/4)*1000, units = "px", res = 300)
     print(do.call("grid.arrange", c(results[['p17plots']], ncol=4)))
     dev.off()
@@ -638,7 +638,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
           plot_annotation(title = paste("INTEGRATED DATA: CLUSTER ", current_clusters[k], sep = ""),
                           theme = theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold")))
         names(results[['p18plots']])[length(results[['p18plots']])] <- paste("CLUSTER_",current_clusters[k], sep = "")
-        somePNGPath <- paste(cdir,"18URSA_PLOT_INTEGRATED_ATAC_SAMPLES_TOP_",n,"_MARKERS_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
+        somePNGPath <- paste(cdir,"18URSA_PLOT_scATAC_INTEGRATED_ATAC_SAMPLES_TOP_",n,"_MARKERS_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
         png(somePNGPath, width = 4000, height = ceiling(length(current_clusters)/4)*800, units = "px", res = 300)
         print(results[['p18plots']][[length(results[['p18plots']])]])
         dev.off()
@@ -673,7 +673,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     data_activity_markers <- data_activity_markers[data_activity_markers$p_val_adj < p_thresh,]
     data_activity_markers <- data_activity_markers[order(data_activity_markers$p_val_adj, decreasing = F),]
     results[['data_activity_markers']] <- data_activity_markers
-    write.csv(results[['data_activity_markers']], paste(cdir, "18URSA_TABLE_TOP_GENES_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
+    write.csv(results[['data_activity_markers']], paste(cdir, "18URSA_TABLE_scATAC_TOP_GENES_MERGED_SAMPLES.csv",sep = ""), row.names = F, quote = F)
 
     wt <- colnames(data_activity_markers)[grep("log.*FC", colnames(data_activity_markers), ignore.case = T)]
     top1_activities <- data_activity_markers %>% group_by(cluster) %>% top_n(n = 1, wt = eval(parse(text = wt)))
@@ -698,14 +698,14 @@ scATACPip <- function(project_name = "Ursa_scATAC",
           plot_annotation(title = paste("INTEGRATED DATA: CLUSTER ", clusters[k], sep = ""),
                           theme = theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold")))
         names(results[['p19plots']])[length(results[['p19plots']])] <- paste("CLUSTER_",clusters[k], sep = "")
-        somePNGPath <- paste(cdir,"19URSA_PLOT_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP_PEAK_GENE_ACTIVITY_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
+        somePNGPath <- paste(cdir,"19URSA_PLOT_scATAC_INTEGRATED_SAMPLES_Tn5_INSERTION_COVERAGE_TOP_PEAK_GENE_ACTIVITY_IN_CLUSTER_",current_clusters[k],"_",project_name,".png", sep = "")
         png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
         print(results[['p19plots']][[length(results[['p19plots']])]])
         dev.off()
       }
     }
   }
-  saveRDS(results, paste(cdir,"20URSA_scATAC_RESULTS_",project_name,".png", sep = ""))
+  saveRDS(results, paste(cdir,"20URSA_DATA_scATAC_",project_name,".png", sep = ""))
   print("Completed!")
 }
 

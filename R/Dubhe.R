@@ -946,46 +946,46 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   }
 
   #######################################################################################################################################
-  somePNGPath <- paste(cdir,"1SCA_scImmune_NUMBER_UNIQUE_CLONOTYPES_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"1URSA_PLOT_scIMMUNE_NUMBER_UNIQUE_CLONOTYPES_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height =2000, units = "px", res = 300)
   print(p1plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"2SCA_scImmune_DISTR_CDR3_LENGTHS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"2URSA_PLOT_scIMMUNE_DISTR_CDR3_LENGTHS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 2000, units = "px", res = 300)
   print(p2plots)
   dev.off()
 
-  write.csv(imm_pr, paste(cdir,"3SCA_scImmune_CLONE_PROPORTIONS_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
-  write.csv(imm_top, paste(cdir,"3SCA_scImmune_TOP_N_MOST_ABUNDANT_CLONOTYPES_PORPORTION_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
-  write.csv(imm_rare, paste(cdir,"3SCA_scImmune_RELATIVE_ABUNDANCE_RARE_CLONOTYPES_PORPORTION_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
-  write.csv(imm_hom, paste(cdir,"3SCA_scImmune_CLONALSPACE_HOMEOSTASIS_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
+  write.csv(imm_pr, paste(cdir,"3URSA_TABLE_scIMMUNE_CLONE_PROPORTIONS_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
+  write.csv(imm_top, paste(cdir,"3URSA_TABLE_scIMMUNE_TOP_N_MOST_ABUNDANT_CLONOTYPES_PORPORTION_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
+  write.csv(imm_rare, paste(cdir,"3URSA_TABLE_scIMMUNE_RELATIVE_ABUNDANCE_RARE_CLONOTYPES_PORPORTION_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
+  write.csv(imm_hom, paste(cdir,"3URSA_TABLE_scIMMUNE_CLONALSPACE_HOMEOSTASIS_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
 
-  somePNGPath <- paste(cdir,"4SCA_scImmune_TOP_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"4URSA_PLOT_scIMMUNE_TOP_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p4plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"5SCA_scImmune_RARE_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"5URSA_PLOT_scIMMUNE_RARE_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p5plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"6SCA_scImmune_CLONALSPACE_HOMEOSTASIS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"6URSA_PLOT_scIMMUNE_CLONALSPACE_HOMEOSTASIS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p6plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"7SCA_scImmune_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"7URSA_PLOT_scIMMUNE_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p7plots)
   dev.off()
 
-  write.csv(all_gene_usage, paste(cdir,"8SCA_scImmune_GENE_USAGE_",project_name,".csv", sep = ""), quote = F, row.names = T)
+  write.csv(all_gene_usage, paste(cdir,"8URSA_TABLE_scIMMUNE_GENE_USAGE_",project_name,".csv", sep = ""), quote = F, row.names = T)
 
   for(i in 1:length(p9plots)){
     plotx <- p9plots[[i]]
-    somePNGPath <- paste(cdir,"9SCA_scImmune_GENE_USAGE_BY_CELL_TYPES_",names(p9plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"9URSA_PLOT_scIMMUNE_GENE_USAGE_BY_CELL_TYPES_",names(p9plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -993,7 +993,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p10plots)){
     plotx <- p10plots[[i]]
-    somePNGPath <- paste(cdir,"10SCA_scImmune_GENE_USAGE_JS-DIVERGENCE_CORRELATION_",names(p10plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"10URSA_PLOT_scIMMUNE_GENE_USAGE_JS-DIVERGENCE_CORRELATION_",names(p10plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1001,7 +1001,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p11plots)){
     plotx <- p11plots[[i]]
-    somePNGPath <- paste(cdir,"11SCA_scImmune_HCLUSTERING_K-MEANS_",names(p11plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"11URSA_PLOT_scIMMUNE_HCLUSTERING_K-MEANS_",names(p11plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1009,7 +1009,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p12plots)){
     plotx <- p12plots[[i]]
-    somePNGPath <- paste(cdir,"12SCA_scImmune_GENE_WISE_SAMPLE_DISTANCE_PCA_MDS_",names(p12plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"12URSA_PLOT_scIMMUNE_GENE_WISE_SAMPLE_DISTANCE_PCA_MDS_",names(p12plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1017,7 +1017,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p13plots)){
     plotx <- p13plots[[i]]
-    somePNGPath <- paste(cdir,"13SCA_scImmune_SPECTRATYPE_CLONALTYPE_",names(p13plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"13URSA_PLOT_scIMMUNE_SPECTRATYPE_CLONALTYPE_",names(p13plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1025,7 +1025,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p14plots)){
     plotx <- p14plots[[i]]
-    somePNGPath <- paste(cdir,"14SCA_scImmune_DIVERSITY_ESTIMATES_",names(p14plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"14URSA_PLOT_scIMMUNE_DIVERSITY_ESTIMATES_",names(p14plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1033,7 +1033,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p15plots)){
     plotx <- p15plots[[i]]
-    somePNGPath <- paste(cdir,"15SCA_scImmune_ALLUVIAL_TOP_10_MOST_ABUNDANT_CLONOTYPES_",names(p15plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_ALLUVIAL_TOP_10_MOST_ABUNDANT_CLONOTYPES_",names(p15plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4000, height = 5000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1051,7 +1051,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
     p1 <- vis(kmers, .position = "stack", .head = n)
     p2 <- vis(kmers, .head = n, .position = "dodge")
     p <- p1/p2
-    somePNGPath <- paste(cdir,"15SCA_scImmune_TOP_10_AA_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_TOP_10_AA_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 4000, units = "px", res = 300)
     print(p)
     dev.off()
@@ -1072,7 +1072,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
         theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1,vjust = 1))
       p2 <- vis(kmers_aa_stats, .plot = "seq")+scale_fill_manual(values = gen_colors(color_conditions$tenx,nrow(kmers_aa_stats)))
       p <- p1+p2
-      somePNGPath <- paste(cdir,"15SCA_scImmune_AA_SEQUENCE_MOTIF_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
+      somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_AA_SEQUENCE_MOTIF_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
       png(somePNGPath, width = 4000, height = 2000, units = "px", res = 300)
       print(p)
       dev.off()
@@ -1080,7 +1080,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   }
 
-  somePNGPath <- paste(cdir,"16SCA_scImmune_CIRCOS_DIAGRAM_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"16URSA_PLOT_scIMMUNE_CIRCOS_DIAGRAM_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 2000, height = 2000, units = "px", res = 300)
   vis(p16data, .plot = "circos", annotationTrack = c("grid", "axis"), preAllocateTracks = 1, grid.col = sample_colors, transparency = 0.2)
   title(paste(project_name,": Repertoire Overlaps (CDR3 AA)", sep = ""), cex = 15)
@@ -1091,14 +1091,14 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   }, bg.border = NA)
   dev.off()
 
-  somePNGPath <- paste(cdir,"17SCA_scImmune_HEATMAP_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"17URSA_PLOT_scIMMUNE_HEATMAP_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
   print(p17plots)
   dev.off()
 
   for(i in 1:length(p18plots)){
     plotx <- p18plots[[i]]
-    somePNGPath <- paste(cdir,"18SCA_scImmune_CLONOTYPE_ABUNDANCE_",names(p18plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"18URSA_PLOT_scIMMUNE_CLONOTYPE_ABUNDANCE_",names(p18plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1106,12 +1106,12 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p19data)){
     x <- p19data[[i]]
-    write.csv(x, paste(cdir,"19SCA_scImmune_CONTIG_ABUNDANCE_",names(p19data)[i],"_",project_name,".csv", sep = ""), quote = F, row.names = T)
+    write.csv(x, paste(cdir,"19URSA_TABLE_scIMMUNE_CONTIG_ABUNDANCE_",names(p19data)[i],"_",project_name,".csv", sep = ""), quote = F, row.names = T)
   }
 
   for(i in 1:length(p20plots)){
     plotx <- p20plots[[i]]
-    somePNGPath <- paste(cdir,"20SCA_scImmune_CDR3_CONTIG_LENGTH_AA_NT_",names(p20plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"20URSA_PLOT_scIMMUNE_CDR3_CONTIG_LENGTH_AA_NT_",names(p20plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 3000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1119,7 +1119,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p21plots)){
     plotx <- p21plots[[i]]
-    somePNGPath <- paste(cdir,"21SCA_scImmune_ALLUVIAL_CLONOTYPES_PROPORTIONS_CDR3_AA_",names(p21plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"21URSA_PLOT_scIMMUNE_ALLUVIAL_CLONOTYPES_PROPORTIONS_CDR3_AA_",names(p21plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 6000, height = 4000, units = "px", res = 200)
     print(plotx)
     dev.off()
@@ -1127,7 +1127,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p22plots)){
     plotx <- p22plots[[i]]
-    somePNGPath <- paste(cdir,"22SCA_scImmune_CONTIG_V_GENE_USAGE_",names(p22plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"22URSA_PLOT_scIMMUNE_CONTIG_V_GENE_USAGE_",names(p22plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1135,7 +1135,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p23plots)){
     plotx <- p23plots[[i]]
-    somePNGPath <- paste(cdir,"23SCA_scImmune_CLONAL_HOMEOSTASIS_PROPORTION_",names(p23plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"23URSA_PLOT_scIMMUNE_CLONAL_HOMEOSTASIS_PROPORTION_",names(p23plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1143,7 +1143,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p24plots)){
     plotx <- p24plots[[i]]
-    somePNGPath <- paste(cdir,"24SCA_scImmune_MORISITA_INDEX_CLONAL_OVERLAP_",names(p24plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"24URSA_PLOT_scIMMUNE_MORISITA_INDEX_CLONAL_OVERLAP_",names(p24plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 3000, units = "px", res = 300)
     print(plotx)
     dev.off()
@@ -1160,84 +1160,85 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
   for(i in 1:length(p26plots)){
     plotx <- p26plots[[i]]
-    somePNGPath <- paste(cdir,"26SCA_scImmune_CLONAL_SAMPLE_DIVERSITY_",names(p26plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"26URSA_PLOT_scIMMUNE_CLONAL_SAMPLE_DIVERSITY_",names(p26plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
   }
 
-  somePNGPath <- paste(cdir,"27SCA_scImmune_UMAP_BY_SAMPLE_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"27URSA_PLOT_scIMMUNE_UMAP_BY_SAMPLE_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p27plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"28SCA_scImmune_UMAP_BY_DATA_TYPE_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"28URSA_PLOT_scIMMUNE_UMAP_BY_DATA_TYPE_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p28plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"29SCA_scImmune_UMAP_BY_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"29URSA_PLOT_scIMMUNE_UMAP_BY_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p29plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"30SCA_scImmune_UMAP_BY_GROUP_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"30URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p30plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"31SCA_scImmune_UMAP_BY_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"31URSA_PLOT_scIMMUNE_UMAP_BY_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 5000, height = 4000, units = "px", res = 300)
   print(p31plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"32SCA_scImmune_UMAP_BY_GROUP_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"32URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p32plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"33SCA_scImmune_UMAP_BY_CLONOTYPE_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"33URSA_PLOT_scIMMUNE_UMAP_BY_CLONOTYPE_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p33plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"34SCA_scImmune_CLONOTYPES_BY_CELL_TYPE_CLONECALL_",integration_method,"_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"34URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_CLONECALL_",integration_method,"_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p34plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"35SCA_scImmune_CLONOTYPES_BY_CELL_TYPE_GROUP_DATA_TYPE_CLONECALL_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"35URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_GROUP_DATA_TYPE_CLONECALL_",project_name, ".png", sep = "")
   png(somePNGPath, width = 6000, height = 4500, units = "px", res = 300)
   print(p35plots)
   dev.off()
 
   for(i in 1:length(p36plots)){
     plotx <- p36plots[[i]]
-    somePNGPath <- paste(cdir,"36SCA_scImmune_CLONO_DIVERISITY_BY_CELL_TYPE_CLONECALL_",names(p36plots)[i],"_",project_name, ".png", sep = "")
+    somePNGPath <- paste(cdir,"36URSA_PLOT_scIMMUNE_CLONO_DIVERISITY_BY_CELL_TYPE_CLONECALL_",names(p36plots)[i],"_",project_name, ".png", sep = "")
     png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
     dev.off()
   }
 
-  somePNGPath <- paste(cdir,"37SCA_scImmune_CLONAL_OVERLAY_CLUSTERS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"37URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CLUSTERS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p37plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"38SCA_scImmune_CLONAL_OVERLAY_CELL_TYPES_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"38URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CELL_TYPES_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
   print(p38plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"39SCA_scImmune_CLONAL_NETWORK_CLUSTERS_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"39URSA_PLOT_scIMMUNE_CLONAL_NETWORK_CLUSTERS_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p39plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"40SCA_scImmune_CLONAL_NETWORK_CELL_TYPES_",project_name, ".png", sep = "")
+  somePNGPath <- paste(cdir,"40URSA_PLOT_scIMMUNE_CLONAL_NETWORK_CELL_TYPES_",project_name, ".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p40plots)
   dev.off()
+  print("Completed!")
 }
 
 
