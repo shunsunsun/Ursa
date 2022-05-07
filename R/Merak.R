@@ -5,6 +5,8 @@
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-16
 ############################################################################################################
+#' @include ini.R
+#' @include common.R
 #' @import ComplexHeatmap
 #' @import cowplot
 #' @import data.table

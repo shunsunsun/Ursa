@@ -5,6 +5,8 @@
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-15
 ############################################################################################################
+#' @include ini.R
+#' @include common.R
 #' @import ComplexHeatmap
 #' @import cowplot
 #' @import data.table
@@ -373,6 +375,8 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   clusters <- split(plotx[,"Cluster"], plotx$Cluster)
   tree_est <- groupOTU(tree_est, clusters)
   tree_est$plotx <- plotx
+  save.image(paste(cdir,"PresetClass.RData", sep = ""))
+
   CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
                                                   data="list", cell_stats="data.frame", dim = "data.frame",
                                                   binary_cnv = "data.frame",selected_chrom = "data.frame",
