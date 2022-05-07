@@ -63,6 +63,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
                      integration_method = c("harmony","seurat"),
                      auto_move = T){
   print("Initialising pipeline environment..")
+  integration_method <- integration_method[1]
   pheno_data <- pheno_ini(pheno_file, pipeline = "scIMMUNE", isDir = T)
   pheno_data$SID <- paste(pheno_data$SAMPLE_ID, pheno_data$GROUP, pheno_data$CELL_TYPE, sep = "_")
   color_conditions <- color_ini()
@@ -404,7 +405,6 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   # contig_bcr
   # contig_tcr_tab
   # contig_tcr_tgd
-  # subset <- subsetContig(contig_bcr, name = "sample", variables = c("PX", "PY"))
   p18plots <- NULL
   p19data <- NULL
   p20plots <- NULL
@@ -621,8 +621,6 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
     }
   }
-
-
 
   print("Running scRNA-Seq..")
 
@@ -934,25 +932,16 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
                               filter.identity = NULL,
                               cloneCall = "aa") + scale_color_manual(values = cluster_colors)
     p39plots <- adjust_theme(p39plots)
-
-    p40plots <- clonalNetwork(data,
-                              reduction = "umap",
-                              identity = "CELL_TYPE",
-                              filter.clones = NULL,
-                              filter.identity = NULL,
-                              cloneCall = "aa") + scale_color_manual(values = celltype_colors)
-    p40plots <- adjust_theme(p40plots)
-
   }
 
   #######################################################################################################################################
-  somePNGPath <- paste(cdir,"1URSA_PLOT_scIMMUNE_NUMBER_UNIQUE_CLONOTYPES_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height =2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"1URSA_PLOT_scIMMUNE_NUMBER_UNIQUE_CLONOTYPES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=5,pointsize=12)
   print(p1plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"2URSA_PLOT_scIMMUNE_DISTR_CDR3_LENGTHS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"2URSA_PLOT_scIMMUNE_DISTR_CDR3_LENGTHS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=5,pointsize=12)
   print(p2plots)
   dev.off()
 
@@ -961,86 +950,88 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   write.csv(imm_rare, paste(cdir,"3URSA_TABLE_scIMMUNE_RELATIVE_ABUNDANCE_RARE_CLONOTYPES_PORPORTION_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
   write.csv(imm_hom, paste(cdir,"3URSA_TABLE_scIMMUNE_CLONALSPACE_HOMEOSTASIS_ALL_SAMPLES_ANALYSIS_",project_name,".csv", sep = ""), quote = F, row.names = T)
 
-  somePNGPath <- paste(cdir,"4URSA_PLOT_scIMMUNE_TOP_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"4URSA_PLOT_scIMMUNE_TOP_CLONAL_PROPORTIONS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   print(p4plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"5URSA_PLOT_scIMMUNE_RARE_CLONAL_PROPORTIONS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"5URSA_PLOT_scIMMUNE_RARE_CLONAL_PROPORTIONS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   print(p5plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"6URSA_PLOT_scIMMUNE_CLONALSPACE_HOMEOSTASIS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"6URSA_PLOT_scIMMUNE_CLONALSPACE_HOMEOSTASIS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   print(p6plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"7URSA_PLOT_scIMMUNE_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"7URSA_PLOT_scIMMUNE_REPERTOIRE_OVERLAPS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   print(p7plots)
   dev.off()
 
   write.csv(all_gene_usage, paste(cdir,"8URSA_TABLE_scIMMUNE_GENE_USAGE_",project_name,".csv", sep = ""), quote = F, row.names = T)
 
+  somePDFPath = paste(cdir,"9URSA_PLOT_scIMMUNE_GENE_USAGE_BY_CELL_TYPES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   for(i in 1:length(p9plots)){
     plotx <- p9plots[[i]]
-    somePNGPath <- paste(cdir,"9URSA_PLOT_scIMMUNE_GENE_USAGE_BY_CELL_TYPES_",names(p9plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"10URSA_PLOT_scIMMUNE_GENE_USAGE_JS-DIVERGENCE_CORRELATION_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   for(i in 1:length(p10plots)){
     plotx <- p10plots[[i]]
-    somePNGPath <- paste(cdir,"10URSA_PLOT_scIMMUNE_GENE_USAGE_JS-DIVERGENCE_CORRELATION_",names(p10plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"11URSA_PLOT_scIMMUNE_HCLUSTERING_KMEANS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   for(i in 1:length(p11plots)){
     plotx <- p11plots[[i]]
-    somePNGPath <- paste(cdir,"11URSA_PLOT_scIMMUNE_HCLUSTERING_K-MEANS_",names(p11plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"12URSA_PLOT_scIMMUNE_GENE_WISE_SAMPLE_DISTANCE_PCA_MDS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   for(i in 1:length(p12plots)){
     plotx <- p12plots[[i]]
-    somePNGPath <- paste(cdir,"12URSA_PLOT_scIMMUNE_GENE_WISE_SAMPLE_DISTANCE_PCA_MDS_",names(p12plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"13URSA_PLOT_scIMMUNE_SPECTRATYPE_CLONALTYPE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3,pointsize=12)
   for(i in 1:length(p13plots)){
     plotx <- p13plots[[i]]
-    somePNGPath <- paste(cdir,"13URSA_PLOT_scIMMUNE_SPECTRATYPE_CLONALTYPE_",names(p13plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"14URSA_PLOT_scIMMUNE_DIVERSITY_ESTIMATES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7,pointsize=12)
   for(i in 1:length(p14plots)){
     plotx <- p14plots[[i]]
-    somePNGPath <- paste(cdir,"14URSA_PLOT_scIMMUNE_DIVERSITY_ESTIMATES_",names(p14plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"15URSA_PLOT_scIMMUNE_ALLUVIAL_TOP_10_MOST_ABUNDANT_CLONOTYPES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=12.5,pointsize=12)
   for(i in 1:length(p15plots)){
     plotx <- p15plots[[i]]
-    somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_ALLUVIAL_TOP_10_MOST_ABUNDANT_CLONOTYPES_",names(p15plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4000, height = 5000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"15URSA_PLOT_scIMMUNE_TOP_10_AA_KMER_SIZE_10_TO_20_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=9,pointsize=12)
   n <- 10
-  for(i in 5:10){
+  for(i in 10:20){
     plotx <- contig_monarch[['data']]
     kmers <- getKmers(plotx, i)
     kmers <- kmers[grep(";", kmers$Kmer, ignore.case = T, invert = T),]
@@ -1051,11 +1042,12 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
     p1 <- vis(kmers, .position = "stack", .head = n)
     p2 <- vis(kmers, .head = n, .position = "dodge")
     p <- p1/p2
-    somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_TOP_10_AA_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 4000, units = "px", res = 300)
     print(p)
+  }
     dev.off()
 
+    somePDFPath = paste(cdir,"15URSA_PLOT_scIMMUNE_AA_SEQUENCE_MOTIF_KMER_SIZE_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=6, pointsize=12)
     for(j in 1:length(contig_monarch)){
       plotx <- contig_monarch$data[[j]]
       kmers <- getKmers(plotx, i)
@@ -1072,16 +1064,12 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
         theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1,vjust = 1))
       p2 <- vis(kmers_aa_stats, .plot = "seq")+scale_fill_manual(values = gen_colors(color_conditions$tenx,nrow(kmers_aa_stats)))
       p <- p1+p2
-      somePNGPath <- paste(cdir,"15URSA_PLOT_scIMMUNE_AA_SEQUENCE_MOTIF_KMER_SIZE_",i,"_",project_name, ".png", sep = "")
-      png(somePNGPath, width = 4000, height = 2000, units = "px", res = 300)
       print(p)
-      dev.off()
     }
+    dev.off()
 
-  }
-
-  somePNGPath <- paste(cdir,"16URSA_PLOT_scIMMUNE_CIRCOS_DIAGRAM_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 2000, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"16URSA_PLOT_scIMMUNE_CIRCOS_DIAGRAM_REPERTOIRE_OVERLAPS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=6, height=6, pointsize=12)
   vis(p16data, .plot = "circos", annotationTrack = c("grid", "axis"), preAllocateTracks = 1, grid.col = sample_colors, transparency = 0.2)
   title(paste(project_name,": Repertoire Overlaps (CDR3 AA)", sep = ""), cex = 15)
   circos.track(track.index = 1, panel.fun = function(x, y) {
@@ -1091,153 +1079,150 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   }, bg.border = NA)
   dev.off()
 
-  somePNGPath <- paste(cdir,"17URSA_PLOT_scIMMUNE_HEATMAP_REPERTOIRE_OVERLAPS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"17URSA_PLOT_scIMMUNE_HEATMAP_REPERTOIRE_OVERLAPS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5, pointsize=12)
   print(p17plots)
   dev.off()
 
+  somePDFPath = paste(cdir,"18URSA_PLOT_scIMMUNE_CLONOTYPE_ABUNDANCE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3, pointsize=12)
   for(i in 1:length(p18plots)){
     plotx <- p18plots[[i]]
-    somePNGPath <- paste(cdir,"18URSA_PLOT_scIMMUNE_CLONOTYPE_ABUNDANCE_",names(p18plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
   for(i in 1:length(p19data)){
     x <- p19data[[i]]
     write.csv(x, paste(cdir,"19URSA_TABLE_scIMMUNE_CONTIG_ABUNDANCE_",names(p19data)[i],"_",project_name,".csv", sep = ""), quote = F, row.names = T)
   }
 
+  somePDFPath = paste(cdir,"20URSA_PLOT_scIMMUNE_CDR3_CONTIG_LENGTH_AA_NT_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=10, pointsize=12)
   for(i in 1:length(p20plots)){
     plotx <- p20plots[[i]]
-    somePNGPath <- paste(cdir,"20URSA_PLOT_scIMMUNE_CDR3_CONTIG_LENGTH_AA_NT_",names(p20plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 3000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"21URSA_PLOT_scIMMUNE_ALLUVIAL_CLONOTYPES_PROPORTIONS_CDR3_AA_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=16, height=16, pointsize=12)
   for(i in 1:length(p21plots)){
     plotx <- p21plots[[i]]
-    somePNGPath <- paste(cdir,"21URSA_PLOT_scIMMUNE_ALLUVIAL_CLONOTYPES_PROPORTIONS_CDR3_AA_",names(p21plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 6000, height = 4000, units = "px", res = 200)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"22URSA_PLOT_scIMMUNE_CONTIG_V_GENE_USAGE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6, pointsize=12)
   for(i in 1:length(p22plots)){
     plotx <- p22plots[[i]]
-    somePNGPath <- paste(cdir,"22URSA_PLOT_scIMMUNE_CONTIG_V_GENE_USAGE_",names(p22plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"23URSA_PLOT_scIMMUNE_CLONAL_HOMEOSTASIS_PROPORTION_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=5.3, pointsize=12)
   for(i in 1:length(p23plots)){
     plotx <- p23plots[[i]]
-    somePNGPath <- paste(cdir,"23URSA_PLOT_scIMMUNE_CLONAL_HOMEOSTASIS_PROPORTION_",names(p23plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"24URSA_PLOT_scIMMUNE_MORISITA_INDEX_CLONAL_OVERLAP_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=8, pointsize=12)
   for(i in 1:length(p24plots)){
     plotx <- p24plots[[i]]
-    somePNGPath <- paste(cdir,"24URSA_PLOT_scIMMUNE_MORISITA_INDEX_CLONAL_OVERLAP_",names(p24plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 3000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"25SCA_scImmun_HIERARCHICAL_CLUSTERING_JENSEN_SHANNON_DISTANCE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=10, pointsize=12)
+  par(mar=c(3,4,1,6))
   for(i in 1:length(p25data)){
     plotx <- p25data[[i]]
-    somePNGPath <- paste(cdir,"25SCA_scImmun_HIERARCHICAL_CLUSTERING_JENSEN_SHANNON_DISTANCE_",names(p25data)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 3000, units = "px", res = 300)
-    par(mar=c(3,4,1,6))
     print(plot(plotx, horiz = TRUE))
-    dev.off()
   }
+  dev.off()
 
+  somePDFPath = paste(cdir,"26URSA_PLOT_scIMMUNE_CLONAL_SAMPLE_DIVERSITY_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   for(i in 1:length(p26plots)){
     plotx <- p26plots[[i]]
-    somePNGPath <- paste(cdir,"26URSA_PLOT_scIMMUNE_CLONAL_SAMPLE_DIVERSITY_",names(p26plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
-  somePNGPath <- paste(cdir,"27URSA_PLOT_scIMMUNE_UMAP_BY_SAMPLE_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"27URSA_PLOT_scIMMUNE_UMAP_BY_SAMPLE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   print(p27plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"28URSA_PLOT_scIMMUNE_UMAP_BY_DATA_TYPE_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"28URSA_PLOT_scIMMUNE_UMAP_BY_DATA_TYPE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   print(p28plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"29URSA_PLOT_scIMMUNE_UMAP_BY_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"29URSA_PLOT_scIMMUNE_UMAP_BY_CLUSTER_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   print(p29plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"30URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CLUSTER_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"30URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CLUSTER_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   print(p30plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"31URSA_PLOT_scIMMUNE_UMAP_BY_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 5000, height = 4000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"31URSA_PLOT_scIMMUNE_UMAP_BY_CELL_TYPE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=8, pointsize=12)
   print(p31plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"32URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CELL_TYPE_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"32URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CELL_TYPE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=7.5, pointsize=12)
   print(p32plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"33URSA_PLOT_scIMMUNE_UMAP_BY_CLONOTYPE_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"33URSA_PLOT_scIMMUNE_UMAP_BY_CLONOTYPE_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=12, height=6.7, pointsize=12)
   print(p33plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"34URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_CLONECALL_",integration_method,"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"34URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_CLONECALL_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=14, height=6, pointsize=12)
   print(p34plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"35URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_GROUP_DATA_TYPE_CLONECALL_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 6000, height = 4500, units = "px", res = 300)
+  somePDFPath = paste(cdir,"35URSA_PLOT_scIMMUNE_CLONOTYPES_BY_CELL_TYPE_GROUP_DATA_TYPE_CLONECALL_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=18, height=10, pointsize=12)
   print(p35plots)
   dev.off()
 
+  somePDFPath = paste(cdir,"36URSA_PLOT_scIMMUNE_CLONO_DIVERISITY_BY_CELL_TYPE_CLONECALL_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
   for(i in 1:length(p36plots)){
     plotx <- p36plots[[i]]
-    somePNGPath <- paste(cdir,"36URSA_PLOT_scIMMUNE_CLONO_DIVERISITY_BY_CELL_TYPE_CLONECALL_",names(p36plots)[i],"_",project_name, ".png", sep = "")
-    png(somePNGPath, width = 3000, height = 2000, units = "px", res = 300)
     print(plotx)
-    dev.off()
   }
+  dev.off()
 
-  somePNGPath <- paste(cdir,"37URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CLUSTERS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"37URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=18, height=6.7, pointsize=12)
   print(p37plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"38URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CELL_TYPES_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4500, height = 2000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"38URSA_PLOT_scIMMUNE_CLONAL_OVERLAY_CELL_TYPES_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=18, height=6.7, pointsize=12)
   print(p38plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"39URSA_PLOT_scIMMUNE_CLONAL_NETWORK_CLUSTERS_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
+  somePDFPath = paste(cdir,"39URSA_PLOT_scIMMUNE_CLONAL_NETWORK_CLUSTERS_",project_name,".pdf", sep = "")
+  pdf(file=somePDFPath, width=14, height=8, pointsize=12)
   print(p39plots)
   dev.off()
 
-  somePNGPath <- paste(cdir,"40URSA_PLOT_scIMMUNE_CLONAL_NETWORK_CELL_TYPES_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
-  print(p40plots)
-  dev.off()
+  saveRDS(data, paste(cdir,"40URSA_DATA_scIMMUNE_INTEGRATED_DATA_",project_name,".RDS", sep = ""))
   print("Completed!")
 }
 
