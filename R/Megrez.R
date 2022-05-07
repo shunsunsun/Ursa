@@ -265,13 +265,14 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   print(paste("Running dimension reduction and clustering.. ", sep = ""))
   cell_groups <- find.clusters(cell_binary_cnv, max.n.clust=10, n.pca = 200, choose.n.clust = F, criterion = "goodfit")
   dapc_out <- dapc(cell_binary_cnv, cell_groups$grp, n.pca = 200, n.da = 10)
-  # print("dapc_out:")
   # print(head(dapc_out))
   dc_cnvs <- dapc_out$var.contr
   umap_out <- umap::umap(cell_binary_cnv)
   umap_coords <- data.frame(UMAP_1 = umap_out$layout[,1], UMAP_2 = umap_out$layout[,2],
                             cell_id = row.names(umap_out$layout))
+  print("pre dapc_out$assign")
   umap_coords$Cluster <- dapc_out$assign[match(umap_coords$cell_id,row.names(dapc_out$posterior))]
+  print("post dapc_out$assign")
   umap_coords <- umap_coords[order(umap_coords$Cluster, decreasing = F),]
   umap_coords$cell_id <- factor(umap_coords$cell_id, levels = unique(umap_coords$cell_id))
 
