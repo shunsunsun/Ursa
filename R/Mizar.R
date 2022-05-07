@@ -199,6 +199,7 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
     print(p)
     dev.off()
 
+    Idents(current) <- "seurat_clusters"
     p <- NULL
     p <- SpatialDimPlot(current,ncol = 1,pt.size.factor = 1.6,
                         images = annot_names[i], cols = cluster_colors)+
@@ -214,7 +215,7 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
             axis.title.y = element_text(size = 25, margin=margin(0,10,0,0)))+
       guides(fill=guide_legend(override.aes = list(size = 5)))
 
-    somePDFPath = paste(cdir,"5URSA_PLOT_UMAP_SLIDE_CLUSTERS_",annot_names[i],"_",project_name,".pdf", sep = "")
+    somePDFPath = paste(cdir,"5URSA_PLOT_SLIDE_CLUSTERS_",annot_names[i],"_",project_name,".pdf", sep = "")
     pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
     print(p)
     dev.off()

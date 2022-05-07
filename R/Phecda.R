@@ -89,7 +89,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
       if(length(which(is.na(col_current))) > 0){
         col_current[which(is.na(col_current))] <- as.character(parameters(current)$name)[which(is.na(col_current))]
       }
-      current <- data.frame(FILE = current_name, exprs(current))
+      current <- data.frame(FILE = current_name, flowCore::exprs(current))
       colnames(current) <- c("FILE", col_current)
       data_submit <- rbind(data_submit, current)
     }
@@ -767,6 +767,8 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 400)
   print(p22plots)
   dev.off()
+
+  saveRDS(data, paste(cdir,"23URSA_CyTOF_DATA_",project_name,".RDS", sep = ""))
   print("Completed!")
 
 }
