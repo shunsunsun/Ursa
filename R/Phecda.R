@@ -146,7 +146,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     guides(fill = guide_legend(reverse = TRUE))
   p1plots <- adjust_theme(p1plots)
 
-  somePNGPath <- paste(cdir,"1SCA_CyTOF_SAMPLE_CELL_SUMMARY_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"1URSA_PLOT_CyTOF_SAMPLE_CELL_SUMMARY_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = length(unique(ggdf$SAMPLE_ID))*200, units = "px", res = 300)
   print(p1plots)
   dev.off()
@@ -181,7 +181,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     guides(color = guide_legend(ncol = 1)) +
     scale_color_manual(values = group_colors)
 
-  somePNGPath <- paste(cdir,"2SCA_CyTOF_MARKER_DENSITIES_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"2URSA_PLOT_CyTOF_MARKER_DENSITIES_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = (ceiling(length(unique(ggdf$Marker))/8)+length(unique(ggdf$SAMPLE_ID)))*200, units = "px", res = 300)
   print(p2plots)
   dev.off()
@@ -221,7 +221,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     scale_color_manual(values = group_colors)
   p3plots <- adjust_theme(p3plots)
 
-  somePNGPath <- paste(cdir,"3SCA_CyTOF_MDS_SAMPLE_DISTANCE_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"3URSA_PLOT_CyTOF_MDS_SAMPLE_DISTANCE_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = 2500, units = "px", res = 300)
   print(p3plots)
   dev.off()
@@ -235,7 +235,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     scale_color_manual(values = group_colors)
   p4plots <- adjust_theme(p4plots)
 
-  somePNGPath <- paste(cdir,"4SCA_CyTOF_PCA_SAMPLE_DISTANCE_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"4URSA_PLOT_CyTOF_PCA_SAMPLE_DISTANCE_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = 2500, units = "px", res = 300)
   print(p4plots)
   dev.off()
@@ -247,7 +247,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
 
   p5plots <- complex_heatmap(as.matrix(current), col = jet2.col(n=100), legendtitle = "ZScore", col_title = project_name)
 
-  somePNGPath <- paste(cdir,"5SCA_CyTOF_HEATMAP_SAMPLE_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"5URSA_PLOT_CyTOF_HEATMAP_SAMPLE_SCALED_ASINH_MEDIAN_EXPRESSION_",project_name,".png", sep = "")
   png(somePNGPath, width=3000, height=2000, units = "px", res = 400)
   print(p5plots)
   dev.off()
@@ -264,14 +264,14 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     scale_color_manual(values = sample_colors)
   p6plots <- adjust_theme(p6plots)
 
-  somePNGPath <- paste(cdir,"6SCA_CyTOF_BOXPLOT_MARKERS_BY_GROUP_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"6URSA_PLOT_CyTOF_BOXPLOT_MARKERS_BY_GROUP_",project_name,".png", sep = "")
   png(somePNGPath, width=5000, height=ceiling(length(unique(plotx$MARKER))/6)*700, units = "px", res = 300)
   print(p6plots)
   dev.off()
 
   p7data <- as.dendrogram(hclust(as.dist(1-cor((current)))))
 
-  somePNGPath <- paste(cdir,"7SCA_CyTOF_DENDROGRAM_SAMPLES_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"7URSA_PLOT_CyTOF_DENDROGRAM_SAMPLES_",project_name,".png", sep = "")
   png(somePNGPath, width=3000, height=2000, units = "px", res = 300)
   par(mar=c(3,4,1,6))
   print(plot(p7data, horiz = TRUE))
@@ -310,7 +310,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     scale_fill_manual(values = group_colors)
   p8plots <- adjust_theme(p8plots, xangle = 45, xsize = 12, hejust = 1, vejust = 1)
 
-  somePNGPath <- paste(cdir,"8SCA_CyTOF_NRS_RANKING_ALL_MARKERS_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"8URSA_PLOT_CyTOF_NRS_RANKING_ALL_MARKERS_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height =2000, units = "px", res = 300)
   print(p8plots)
   dev.off()
@@ -390,7 +390,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     geom_point(colour = ifelse(PAC$K == chosen_k, "red", "grey"), size = ifelse(PAC$K == chosen_k, 5, 2))
   p9plots <- adjust_theme(p9plots)
 
-  somePNGPath <- paste(cdir,"9SCA_CyTOF_PAC_ELBOW_PLOT_CHOSEN_CLUSTER_NUMBER_",chosen_k,"_CLUSTERS_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"9URSA_PLOT_CyTOF_PAC_ELBOW_PLOT_CHOSEN_CLUSTER_NUMBER_",chosen_k,"_CLUSTERS_",project_name,".png", sep = "")
   png(somePNGPath, width=4000, height=3000, res = 300)
   print(p9plots)
   dev.off()
@@ -430,7 +430,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   melt_plot_median$Cluster <- gsub("Cluster_(.*):.*","\\1",melt_plot_median$Cluster)
 
   p10plots <- complex_heatmap(plot_median, col = jet2.col(n = 100), legendtitle = "ZScore", col_title = project_name)
-  somePNGPath <- paste(cdir,"10SCA_CyTOF_HEATMAP_CLUSTERS_ASINH_MEDIAN_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"10URSA_PLOT_CyTOF_HEATMAP_CLUSTERS_ASINH_MEDIAN_",project_name,".png", sep = "")
   png(somePNGPath, width=ncol(plot_median)*120, height=nrow(plot_median)*300, units = "px", res = 400)
   print(p10plots)
   dev.off()
@@ -471,7 +471,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     scale_color_manual(values = sample_colors)
   p11plots <- adjust_theme(p11plots, xangle = 45, xsize = 8, title_size = 15, hejust = 1, vejust = 1)
 
-  somePNGPath <- paste(cdir,"11SCA_CyTOF_BOXPLOT_CLUSTERS_BY_GROUP_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"11URSA_PLOT_CyTOF_BOXPLOT_CLUSTERS_BY_GROUP_",project_name,".png", sep = "")
   png(somePNGPath, width = ceiling(length(unique(plot_median$MARKER)))*120, height = ceiling(length(unique(plot_median$CLUSTER))/2)*700, units = "px", res = 300)
   print(p11plots)
   dev.off()
@@ -502,7 +502,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     ggtitle(paste(project_name,": UMAP BY GROUP", sep = ""))
   p12plots <- adjust_theme(p12plots)
 
-  somePNGPath <- paste(cdir,"12SCA_CyTOF_UMAP_BY_GROUP_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"12URSA_PLOT_CyTOF_UMAP_BY_GROUP_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height =2500, units = "px", res = 300)
   print(p12plots)
   dev.off()
@@ -512,7 +512,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
                                 color_by = "FILE", group_by = "FILE", xlabel = "UMAP1", ylabel = "UMAP2", strip_size = 12)
   p13plots <- adjust_theme(p13plots, legend = "none", strip_size = 12, xsize = 15)
 
-  somePNGPath <- paste(cdir,"13SCA_CyTOF_UMAP_BY_SAMPLE_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"13URSA_PLOT_CyTOF_UMAP_BY_SAMPLE_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = ceiling(length(unique(plot_out$FILE))/4)*800, units = "px", res = 300)
   print(p13plots)
   dev.off()
@@ -522,7 +522,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
                            col = cluster_colors, numeric = T, annot = T, point_size = 0.8, legendsize = 20, label_size = 8)
   p14plots <- adjust_theme(p14plots)
 
-  somePNGPath <- paste(cdir,"14SCA_CyTOF_UMAP_BY_CLUSTER_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"14URSA_PLOT_CyTOF_UMAP_BY_CLUSTER_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = 2500, units = "px", res = 300)
   print(p14plots)
   dev.off()
@@ -531,7 +531,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
                            plot_title = paste(project_name,": PCA BY CLUSTER", sep = ""),
                            col = cluster_colors, numeric = T, annot = F, point_size = 0.8, legendsize = 20, label_size = 8)
   p15plots <- adjust_theme(p15plots)
-  somePNGPath <- paste(cdir,"15SCA_CyTOF_PCA_BY_CLUSTER_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"15URSA_PLOT_CyTOF_PCA_BY_CLUSTER_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height = 2500, units = "px", res = 300)
   print(p15plots)
   dev.off()
@@ -552,7 +552,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
       geom_point(size = 0.8) + theme_classic() + ggtitle(names(group_colors)[i]) +
       scale_color_gradientn(colours = colorRampPalette(color_conditions$BlueYellowRed)(100))
     p <- adjust_theme(p, xsize = 10)
-    somePNGPath <- paste(cdir,"16SCA_CyTOF_UMAP_ASINH_EXPRESSION_MARKER_",names(group_colors)[i],"_",project_name,".png", sep = "")
+    somePNGPath <- paste(cdir,"16URSA_PLOT_CyTOF_UMAP_ASINH_EXPRESSION_MARKER_",names(group_colors)[i],"_",project_name,".png", sep = "")
     png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
     print(p)
     dev.off()
@@ -619,7 +619,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
           panel.border = element_blank(),
           panel.background = element_blank())
 
-  somePNGPath <- paste(cdir,"17SCA_CyTOF_PROPORTION_OF_SAMPLES_IN_EACH_CLUSTER_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"17URSA_PLOT_CyTOF_PROPORTION_OF_SAMPLES_IN_EACH_CLUSTER_",project_name,".png", sep = "")
   png(somePNGPath, width = 5000, height = 4800, units = "px", res = 300)
   print(p17plots)
   dev.off()
@@ -631,7 +631,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     guides(color=guide_legend(title="CLUSTERS", ncol = 2),fill = guide_legend(title="CLUSTERS", ncol = 2))
   p18plots <- adjust_theme(p18plots, xangle = 45, hejust = 1, vejust = 1, strip_size = 1)
 
-  somePNGPath <- paste(cdir,"18SCA_CyTOF_PROPORTION_OF_CLUSTERS_IN_EACH_SAMPLE_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"18URSA_PLOT_CyTOF_PROPORTION_OF_CLUSTERS_IN_EACH_SAMPLE_",project_name,".png", sep = "")
   png(somePNGPath, width = length(unique(melt_summary$SAMPLE_ID))*400, height = 2500, units = "px", res = 300)
   print(p18plots)
   dev.off()
@@ -720,7 +720,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   colnames(codes_dr)[grep("code_clustering", colnames(codes_dr), ignore.case = T)] <- "Cluster"
   codes_dr$Cluster <- factor(codes_dr$Cluster, levels = sort(unique(as.numeric(as.character(codes_dr$Cluster)))))
   p20data <- codes_dr[,grep("UMAP|tSNE|PCA|Label", colnames(codes_dr), ignore.case = T, invert = T)]
-  write.csv(p20data, paste(cdir, "20SCA_TABLE_DATA_CLUSTER_AUTO_PHENOTYPES_PREDICTION_",project_name,".csv",sep = ""),row.names = F)
+  write.csv(p20data, paste(cdir, "20URSA_PLOT_TABLE_DATA_CLUSTER_AUTO_PHENOTYPES_PREDICTION_",project_name,".csv",sep = ""),row.names = F)
 
   codes_dr$Label <- paste("SOM:",codes_dr$SOM_ID, sep = ":")
   p19plots <- ggplot(codes_dr, aes(x = tSNE1, y = tSNE2,color = Cluster, size = Size, label = Label)) +
@@ -733,7 +733,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     ggtitle(paste(project_name,"\nSOM Nodes tSNE", sep = ""))
   p19plots <- adjust_theme(p19plots)
 
-  somePNGPath <- paste(cdir,"19SCA_CyTOF_tSNE_SOM_NODES_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"19URSA_PLOT_CyTOF_tSNE_SOM_NODES_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 400)
   print(p19plots)
   dev.off()
@@ -748,7 +748,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     ggtitle(paste(project_name,"\nSOM Nodes UMAP", sep = ""))
   p21plots <- adjust_theme(p21plots)
 
-  somePNGPath <- paste(cdir,"21SCA_CyTOF_UMAP_SOM_NODES_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"21URSA_PLOT_CyTOF_UMAP_SOM_NODES_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 400)
   print(p21plots)
   dev.off()
@@ -763,9 +763,10 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
     ggtitle(paste(project_name,"\nSOM Nodes PCA", sep = ""))
   p22plots <- adjust_theme(p22plots)
 
-  somePNGPath <- paste(cdir,"22SCA_CyTOF_PCA_SOM_NODES_",project_name,".png", sep = "")
+  somePNGPath <- paste(cdir,"22URSA_PLOT_CyTOF_PCA_SOM_NODES_",project_name,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 400)
   print(p22plots)
   dev.off()
+  print("Completed!")
 
 }
