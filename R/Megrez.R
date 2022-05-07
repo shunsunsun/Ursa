@@ -66,6 +66,12 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
                      size_threshold = 2000000,
                      cnv_cell_threshold = 5){
   print("Initialising pipeline environment..")
+  CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
+                                            data="list", cell_stats="data.frame", dim = "data.frame",
+                                            binary_cnv = "data.frame",selected_chrom = "data.frame",
+                                            chrom_bar = "data.frame", proportion = "data.frame",
+                                            tree = "phylo", color_schemes = "list"))
+  print("post setClass")
   pheno_data <- pheno_ini(pheno_file, pipeline = "scCNV", isDir = T)
   ctime <- time_ini()
   ploidy_levels <- c("0","1","2","3","4","5","6","7","8","9",">=10")
@@ -375,14 +381,7 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   clusters <- split(plotx[,"Cluster"], plotx$Cluster)
   tree_est <- groupOTU(tree_est, clusters)
   tree_est$plotx <- plotx
-  save.image(paste(cdir,"PresetClass.RData", sep = ""))
 
-  CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
-                                                  data="list", cell_stats="data.frame", dim = "data.frame",
-                                                  binary_cnv = "data.frame",selected_chrom = "data.frame",
-                                                  chrom_bar = "data.frame", proportion = "data.frame",
-                                                  tree = "phylo", color_schemes = "list"))
-print("post setClass")
  ccolor_schemes <- ini_colorschemes(assay = "scCNV", data = list(data_cell_stats = data_cell_stats, umap_coords = umap_coords))
  print("post ccolor_schemes")
 
