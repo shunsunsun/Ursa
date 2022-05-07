@@ -333,7 +333,7 @@ CyTOFPip <- function(project_name = "Ursa_CyTOF",
   print("Dimension reduction and clustering..")
 
   data_fs = as(data0,"flowSet")
-  pData(data_fs)$name <- files
+  flowCore::pData(data_fs)$name <- files
   som_input <- ReadInput(data_fs)
   set.seed(59)
   som <- BuildSOM(som_input)
