@@ -270,9 +270,7 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   umap_out <- umap::umap(cell_binary_cnv)
   umap_coords <- data.frame(UMAP_1 = umap_out$layout[,1], UMAP_2 = umap_out$layout[,2],
                             cell_id = row.names(umap_out$layout))
-  print("pre dapc_out$assign")
   umap_coords$Cluster <- dapc_out$assign[match(umap_coords$cell_id,row.names(dapc_out$posterior))]
-  print("post dapc_out$assign")
   umap_coords <- umap_coords[order(umap_coords$Cluster, decreasing = F),]
   umap_coords$cell_id <- factor(umap_coords$cell_id, levels = unique(umap_coords$cell_id))
 
@@ -353,6 +351,7 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   data_prop <- melt(data_prop)
   colnames(data_prop) <- c("Sample","Cluster","Proportion")
 
+  print("post melt(data_prop)")
   cn_clusters <- data.frame(cell_id = unique(selected_data$cell_id))
   cn_clusters$Cluster <- dapc_out$assign[match(cn_clusters$cell_id,row.names(dapc_out$posterior))]
   cn_clusters$copy_number <- round(data_summary$mean_ploidy)[match(cn_clusters$cell_id, paste(data_summary$Sample,data_summary$cell_id,sep = "_"))]
@@ -375,7 +374,7 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   clusters <- split(plotx[,"Cluster"], plotx$Cluster)
   tree_est <- groupOTU(tree_est, clusters)
   tree_est$plotx <- plotx
-
+  print("pre CreateUrsa")
   CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
                                                   data="list", cell_stats="data.frame", dim = "data.frame",
                                                   binary_cnv = "data.frame",selected_chrom = "data.frame",
