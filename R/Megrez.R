@@ -66,7 +66,7 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
                      size_threshold = 2000000,
                      cnv_cell_threshold = 5){
   print("Initialising pipeline environment..")
-  CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
+  CreateUrsa <- methods::setClass("Ursa", slots=list(project = "character",assay = "character",
                                             data="list", cell_stats="data.frame", dim = "data.frame",
                                             binary_cnv = "data.frame",selected_chrom = "data.frame",
                                             chrom_bar = "data.frame", proportion = "data.frame",
