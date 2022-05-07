@@ -140,12 +140,6 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
     print(p1/p2)
     dev.off()
 
-
-
-
-
-
-
     print(paste("Running dimension reduction and clustering..", sep = ""))
     DefaultAssay(current) <- "SCT"
     current <- RunPCA(current, assay = "SCT", verbose = FALSE)
@@ -310,7 +304,9 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
     pdf(file=somePDFPath, width=15, height=10,pointsize=12)
     print(p)
     dev.off()
-
+    data_current[[i]] <- current
+    names(data_current)[i] <- cname
+}
     if(run_rnaseq == TRUE){
     scrna_files <- list.files(rnaseq_dir, pattern = "\\.h5$", ignore.case = T, full.names = T, recursive = T)
     if(length(scrna_files) > 0){
@@ -403,12 +399,7 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
       }
       }
     }
-
-    data_current[[i]] <- current
-    names(data_current)[i] <- cname
-
-  }
+    }
 saveRDS(data_current, paste(cdir,"13URSA_SPATIAL_DATA_",annot_names[i],"_",project_name,".RDS", sep = ""))
 print("Completed!")
-
 }

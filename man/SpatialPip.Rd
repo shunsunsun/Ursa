@@ -8,7 +8,9 @@ SpatialPip(
   project_name = "Ursa_Spatial",
   input_dir = "./",
   output_dir = "./",
-  pheno_file
+  pheno_file,
+  rnaseq_dir = "./",
+  run_rnaseq = FALSE
 )
 }
 \arguments{
@@ -23,6 +25,14 @@ created under the specified output directory.}
 
 \item{pheno_file}{Meta data file directory. Accept only .csv/.txt format
 files.}
+
+\item{rnaseq_dir}{scRNA-seq data files directory. We recommend putting the scRNA-seq
+data in a separate directory separating them from spatial input files.
+scRNA-seq files should be filtered .h5 format files from 10X Genomics and their file
+names should have the same sample ID as file prefix to their correspond spatial files.}
+
+\item{run_rnaseq}{If scRNA-seq integration with spatial data should be run. Default to FALSE.
+There is no need to prepare scRNA-seq folder if run_rnaseq is set to FALSE.}
 }
 \description{
 This function will run a bioinformatics analysis of post-quantification Spatial
