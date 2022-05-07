@@ -66,12 +66,6 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
                      size_threshold = 2000000,
                      cnv_cell_threshold = 5){
   print("Initialising pipeline environment..")
-  CreateUrsa <- methods::setClass("Ursa", slots=list(project = "character",assay = "character",
-                                            data="list", cell_stats="data.frame", dim = "data.frame",
-                                            binary_cnv = "data.frame",selected_chrom = "data.frame",
-                                            chrom_bar = "data.frame", proportion = "data.frame",
-                                            tree = "phylo", color_schemes = "list"))
-  print("post setClass")
   pheno_data <- pheno_ini(pheno_file, pipeline = "scCNV", isDir = T)
   ctime <- time_ini()
   ploidy_levels <- c("0","1","2","3","4","5","6","7","8","9",">=10")
@@ -383,44 +377,46 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   tree_est$plotx <- plotx
 
  ccolor_schemes <- ini_colorschemes(assay = "scCNV", data = list(data_cell_stats = data_cell_stats, umap_coords = umap_coords))
- print("post ccolor_schemes")
 
- results <- CreateUrsa(project = project_name,assay = "scCNV", data = data_current,
-                cell_stats = data_cell_stats, dim = umap_coords,
-                binary_cnv = binary_cnv_events,
-                selected_chrom = select_bychrom_data,
-                chrom_bar = select_bychrom_data_bar,
-                proportion = data_prop, tree = tree_est,
-                color_schemes = ccolor_schemes)
- print("post CreateUrsa")
+  results <- NULL
+  results$project <- project_name
+  results$assay <- "scCNV"
+  results$data <- data_current
+  results$cell_stats <- data_cell_stats
+  results$dim <- umap_coords
+  results$binary_cnv <- binary_cnv_events
+  results$selected_chrom <- select_bychrom_data
+  results$chrom_bar <- select_bychrom_data_bar
+  results$proportion <- data_prop
+  results$tree <- tree_est
+  results$color_schemes <- ccolor_schemes
 
   plot_ploidy(results, cdir)
-  print("post plot_ploidy")
 
   p <- NULL
-  p <- ggplot(results@cell_stats, aes(x = Mean_ploidy, y = Sample)) +
-    geom_density_ridges(aes(fill = Sample)) + ggtitle(results@project) +
+  p <- ggplot(results$cell_stats, aes(x = Mean_ploidy, y = Sample)) +
+    geom_density_ridges(aes(fill = Sample)) + ggtitle(results$project) +
     xlab("Mean single-cell ploidy") + ylab("Samples") + theme_classic() +
-    scale_fill_manual(values = results@color_schemes$sample_colors)
+    scale_fill_manual(values = results$color_schemes$sample_colors)
   p <- adjust_theme(p, xsize = 20, title_size = 25)
 
-  somePNGPath <- paste(cdir,"2URSA_PLOT_scCNV_PLOT_PLOIDY_INFO_MEAN_CELL_PLOIDY_",results@project,".png", sep = "")
+  somePNGPath <- paste(cdir,"2URSA_PLOT_scCNV_PLOT_PLOIDY_INFO_MEAN_CELL_PLOIDY_",results$project,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
   print(p)
   dev.off()
 
-  somePNGPath <- paste(cdir,"3URSA_PLOT_scCNV_DAPC_COMPONENT12_",results@project,".png", sep = "")
+  somePNGPath <- paste(cdir,"3URSA_PLOT_scCNV_DAPC_COMPONENT12_",results$project,".png", sep = "")
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
-  print(scatter(dapc_out, bg="white", col = results@color_schemes$cluster_colors, legend=T,
+  print(scatter(dapc_out, bg="white", col = results$color_schemes$cluster_colors, legend=T,
                 scree.da=FALSE, inset.solid = 0.6,cex.lab = 1, label.inds = c("DAPC_1","DAPC_2")))
   dev.off()
 
   p <- NULL
-  p <- plot_bygroup(results@dim, x = "UMAP_1", y = "UMAP_2", group = "Cluster", plot_title = results@project,
-                    col = results@color_schemes$cluster_colors, annot = F, legend_position = "right", numeric = T,
+  p <- plot_bygroup(results$dim, x = "UMAP_1", y = "UMAP_2", group = "Cluster", plot_title = results$project,
+                    col = results$color_schemes$cluster_colors, annot = F, legend_position = "right", numeric = T,
                     point_size = 0.5, label_size = 8,legendsize = 15)
 
-  somePNGPath <- paste(cdir,"4URSA_PLOT_scCNV_UMAP_COMPONENT12_",results@project,".png", sep = "")
+  somePNGPath <- paste(cdir,"4URSA_PLOT_scCNV_UMAP_COMPONENT12_",results$project,".png", sep = "")
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
   print(p)
   dev.off()
@@ -429,15 +425,15 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   plot_selected_chroms(results, output_dir = cdir)
 
   p <- NULL
-  p <- ggplot(results@proportion, aes(x=Sample, y=Proportion, fill=Cluster, group = Cluster)) +
+  p <- ggplot(results$proportion, aes(x=Sample, y=Proportion, fill=Cluster, group = Cluster)) +
     geom_area(alpha=0.9, size=0.5, colour = "black")+
-    theme_classic()+ggtitle(results@project)+
+    theme_classic()+ggtitle(results$project)+
     ylab("Fraction of Cells")+
-    scale_fill_manual(values = results@color_schemes$cluster_colors)+
+    scale_fill_manual(values = results$color_schemes$cluster_colors)+
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
   p <- adjust_theme(p, legend = "right", xsize = 20, xangle = 45, hejust = 1, vejust = 1)
 
-  somePNGPath <- paste(cdir,"7URSA_PLOT_scCNV_CLUSTER_PROPORTION_BY_SAMPLES_",results@project,".png", sep = "")
+  somePNGPath <- paste(cdir,"7URSA_PLOT_scCNV_CLUSTER_PROPORTION_BY_SAMPLES_",results$project,".png", sep = "")
   png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
   print(p)
   dev.off()
@@ -448,16 +444,16 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
               aes(color = group,
                   size = c(tree_est$plotx$Size/50,rep(min(tree_est$plotx$Size/100),(nrow(tree_est$edge)+1) - nrow(tree_est$plotx))))) +
     geom_tiplab(hjust = -2, offset=.1) +
-    scale_color_manual(values = results@color_schemes$cluster_colors) +
+    scale_color_manual(values = results$color_schemes$cluster_colors) +
     theme(legend.position="none") +
     scale_size_continuous()
 
-  somePNGPath <- paste(cdir,"8URSA_PLOT_scCNV_PHYLOGENETIC_TREE_CLUSTERS_",results@project,".png", sep = "")
+  somePNGPath <- paste(cdir,"8URSA_PLOT_scCNV_PHYLOGENETIC_TREE_CLUSTERS_",results$project,".png", sep = "")
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
   print(p)
   dev.off()
 
-  saveRDS(results, paste(cdir,"9URSA_DATA_scCNV_RESULT_",results@project,".RDS", sep = ""))
+  saveRDS(results, paste(cdir,"9URSA_DATA_scCNV_RESULT_",results$project,".RDS", sep = ""))
   print("Completed!")
 
 }

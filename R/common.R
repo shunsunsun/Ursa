@@ -1,9 +1,9 @@
 #' @keywords internal
 
 plot_ploidy <- function(results, output_dir){
-  data <- results@data
-  data_cell_stats <- results@cell_stats
-  project_name <- results@project
+  data <- results$data
+  data_cell_stats <- results$cell_stats
+  project_name <- results$project
   for(i in 1:length(data)){
   sample_id <- names(data)[i]
   current <- data[[i]]
@@ -18,8 +18,8 @@ plot_ploidy <- function(results, output_dir){
     # geom_point(alpha = 0.6)+
     geom_tile(size = 0.8)+
     xlab("Chromosome Positions") + ylab("") +
-    scale_color_manual(values = results@color_schemes$color_heatmap)+
-    scale_fill_manual(values = results@color_schemes$color_heatmap)+
+    scale_color_manual(values = results$color_schemes$color_heatmap)+
+    scale_fill_manual(values = results$color_schemes$color_heatmap)+
     facet_grid(.~chrom, scales = "free", switch = "x", space = "free_x")+
     ggtitle(paste(sample_id, ", ", signif(length(which(current$Ploidy == "2"))/nrow(current)*100,3), "% diploid"))
 
@@ -27,7 +27,7 @@ plot_ploidy <- function(results, output_dir){
     geom_bar(mapping = aes(x = 1, y = id, fill = Cell_Ploidy), stat = "identity", width = 1)+
     theme_void()+
     theme(panel.spacing.x = unit(1, "mm")) +
-    scale_fill_manual(values = results@color_schemes$cell_ploidy_colors)
+    scale_fill_manual(values = results$color_schemes$cell_ploidy_colors)
 
   legend <- plot_grid(get_legend(p2), get_legend(p1), ncol = 1)
   p1 <- p1 + theme(legend.position = "none")
@@ -45,7 +45,7 @@ plot_ploidy <- function(results, output_dir){
 }
 
 plot_ploidy_binary <- function(results, output_dir){
-  plotx <- results@binary_cnv
+  plotx <- results$binary_cnv
   p1 <- ggplot(plotx, aes(CNV_Event, cell_id, fill = Count))+
     theme(axis.ticks.x=element_blank(),axis.text.x=element_blank(),
           axis.ticks.y=element_blank(),axis.text.y=element_blank(),
@@ -63,14 +63,14 @@ plot_ploidy_binary <- function(results, output_dir){
     theme(panel.spacing.x = unit(1, "mm"),
           legend.title = element_text(size =20, face = "bold"),
           legend.text = element_text(size = 15)) +
-    scale_fill_manual(values = results@color_schemes$cluster_colors)
+    scale_fill_manual(values = results$color_schemes$cluster_colors)
 
   legend <- plot_grid(get_legend(p2), get_legend(p1), ncol = 1)
   p1 <- p1 + theme(legend.position = "none")
   p2 <- p2 + theme(legend.position = "none")
   p3 <- plot_grid(p2, p1, align = "h", ncol = 2, axis = "tb", rel_widths = c(1,20), rel_heights = c(1,1))
 
-  somePNGPath <- paste(output_dir,"5URSA_PLOT_scCNV_BINARY_CNV_EVENTS_BY_CLUSTERS_",results@project,".png", sep = "")
+  somePNGPath <- paste(output_dir,"5URSA_PLOT_scCNV_BINARY_CNV_EVENTS_BY_CLUSTERS_",results$project,".png", sep = "")
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
   print(plot_grid(p3, legend, nrow = 1, rel_widths = c(10,1),rel_heights = c(0.1, 1)))
   dev.off()
@@ -78,8 +78,8 @@ plot_ploidy_binary <- function(results, output_dir){
 }
 
 plot_selected_chroms <- function(results, output_dir){
-  plotx <- results@selected_chrom
-  plotx_bar <- results@chrom_bar
+  plotx <- results$selected_chrom
+  plotx_bar <- results$chrom_bar
 
   p1 <- ggplot(plotx, aes(range, cell_id, color = Ploidy, fill = Ploidy))+
     theme(axis.ticks.x=element_blank(),axis.text.x=element_blank(),
@@ -89,8 +89,8 @@ plot_selected_chroms <- function(results, output_dir){
           legend.title = element_text(size =20, face = "bold"),
           legend.text = element_text(size = 15)) +
     geom_tile(size = 0.8)+
-    scale_fill_manual(values = results@color_schemes$color_heatmap)+
-    scale_color_manual(values = results@color_schemes$color_heatmap)+
+    scale_fill_manual(values = results$color_schemes$color_heatmap)+
+    scale_color_manual(values = results$color_schemes$color_heatmap)+
     xlab("Chromosome Positions") + ylab("") +
     facet_grid(.~chrom, scales = "free", switch = "x", space = "free_x")
 
@@ -100,14 +100,14 @@ plot_selected_chroms <- function(results, output_dir){
     theme(panel.spacing.x = unit(1, "mm"),
           legend.title = element_text(size =20, face = "bold"),
           legend.text = element_text(size = 15)) +
-    scale_fill_manual(values = results@color_schemes$cluster_colors)
+    scale_fill_manual(values = results$color_schemes$cluster_colors)
 
   legend <- plot_grid(get_legend(p2), get_legend(p1), ncol = 1)
   p1 <- p1 + theme(legend.position = "none")
   p2 <- p2 + theme(legend.position = "none")
   p3 <- plot_grid(p2, p1, align = "h", ncol = 2, axis = "tb", rel_widths = c(1,20), rel_heights = c(1,1))
 
-  somePNGPath <- paste(output_dir,"6URSA_PLOT_scCNV_PLOIDY_INFO_TOP_50_CNVs_",results@project,".png", sep = "")
+  somePNGPath <- paste(output_dir,"6URSA_PLOT_scCNV_PLOIDY_INFO_TOP_50_CNVs_",results$project,".png", sep = "")
   png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
   print(plot_grid(p3, legend, nrow = 1, rel_widths = c(10,1),rel_heights = c(0.1, 1)))
   dev.off()
