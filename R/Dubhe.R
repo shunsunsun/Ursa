@@ -9,6 +9,7 @@
 #' @import cowplot
 #' @import data.table
 #' @import dplyr
+#' @import ggraph
 #' @import ggplot2
 #' @import ggpubr
 #' @import ggrepel
@@ -1155,22 +1156,22 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   dev.off()
 
   somePDFPath = paste(cdir,"27URSA_PLOT_scIMMUNE_UMAP_BY_SAMPLE_",project_name,".pdf", sep = "")
-  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
+  pdf(file=somePDFPath, width=12, height=8, pointsize=12)
   print(p27plots)
   dev.off()
 
   somePDFPath = paste(cdir,"28URSA_PLOT_scIMMUNE_UMAP_BY_DATA_TYPE_",project_name,".pdf", sep = "")
-  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
+  pdf(file=somePDFPath, width=12, height=8, pointsize=12)
   print(p28plots)
   dev.off()
 
   somePDFPath = paste(cdir,"29URSA_PLOT_scIMMUNE_UMAP_BY_CLUSTER_",project_name,".pdf", sep = "")
-  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
+  pdf(file=somePDFPath, width=12, height=8, pointsize=12)
   print(p29plots)
   dev.off()
 
   somePDFPath = paste(cdir,"30URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CLUSTER_",project_name,".pdf", sep = "")
-  pdf(file=somePDFPath, width=10, height=6.7, pointsize=12)
+  pdf(file=somePDFPath, width=12, height=8, pointsize=12)
   print(p30plots)
   dev.off()
 
@@ -1180,7 +1181,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   dev.off()
 
   somePDFPath = paste(cdir,"32URSA_PLOT_scIMMUNE_UMAP_BY_GROUP_CELL_TYPE_",project_name,".pdf", sep = "")
-  pdf(file=somePDFPath, width=10, height=7.5, pointsize=12)
+  pdf(file=somePDFPath, width=12, height=9, pointsize=12)
   print(p32plots)
   dev.off()
 
