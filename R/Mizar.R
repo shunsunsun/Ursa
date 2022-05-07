@@ -47,12 +47,20 @@ NULL
 #' created under the specified output directory.
 #' @param pheno_file Meta data file directory. Accept only .csv/.txt format
 #' files.
+#' @param rnaseq_dir scRNA-seq data files directory. We recommend putting the scRNA-seq
+#' data in a separate directory separating them from spatial input files.
+#' scRNA-seq files should be filtered .h5 format files from 10X Genomics and their file
+#' names should have the same sample ID as file prefix to their correspond spatial files.
+#' @param run_rnaseq If scRNA-seq integration with spatial data should be run. Default to FALSE.
+#' There is no need to prepare scRNA-seq folder if run_rnaseq is set to FALSE.
 #' @export
 #'
 SpatialPip <- function(project_name = "Ursa_Spatial",
                      input_dir = "./",
                      output_dir = "./",
-                     pheno_file){
+                     pheno_file,
+                     rnaseq_dir = "./",
+                     run_rnaseq = FALSE){
   print("Initialising pipeline environment..")
   pheno_data <- pheno_ini(pheno_file, pipeline = "SPATIAL", isDir = T)
   color_conditions <- color_ini()
@@ -92,6 +100,7 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
     current_sample <- gsub(".*\\/(.*\\.h5)$","\\1",sample_files[i], ignore.case = T)
     cpheno <- pheno_data[which(toupper(pheno_data$FILE) == toupper(current_sample)),]
     cname <- cpheno$SAMPLE_ID
+    annot_names <- c(annot_names, cname)
     print(current_sample)
     print(paste("Running sample: ", current_sample, "..", sep = ""))
     current <- Load10X_Spatial(data.dir = gsub("(.*\\/).*","\\1",sample_files[i], ignore.case = T), filename = current_sample)
@@ -107,254 +116,299 @@ SpatialPip <- function(project_name = "Ursa_Spatial",
     current <- add_names(current, cname, cname)
     current$CELL_ID <- row.names(current@meta.data)
     print(current)
+    DefaultAssay(current) <- "SCT"
+    current <- FindVariableFeatures(current)
+    sample_features[[i]] <- VariableFeatures(current)
+    names(sample_features)[i] <- cname
 
-    if(i==1){
-      data <- current
-      DefaultAssay(data) <- "SCT"
-      VariableFeatures(data) <- VariableFeatures(data)
-      sample_features[[i]] <- VariableFeatures(data)
-      names(sample_features)[i] <- cname
-    }else{
-      data <- merge(data, current)
-      DefaultAssay(data) <- "SCT"
-      VariableFeatures(data) <- c(VariableFeatures(data),VariableFeatures(current))
-      sample_features[[i]] <- VariableFeatures(current)
-      names(sample_features)[i] <- cname
-    }
-    data_current[[i]] <- current
-    names(data_current)[i] <- cname
-    annot_names <- c(annot_names, cname)
+    plotx <- current
+    plotx$orig.ident <- ifelse(nchar(plotx$orig.ident) > 15, substr(plotx$orig.ident, 1, 15), plotx$orig.ident)
+    p1 <- NULL
+    p2 <- NULL
+    p1 <- VlnPlot(plotx, group.by = "orig.ident", features = "Spatial_Counts", pt.size = 0.1, cols = color_conditions$general) + NoLegend() + xlab("SAMPLE_NAME")
+    p2 <- SpatialFeaturePlot(plotx, features = "Spatial_Counts") + theme(legend.position = "right")
+    somePDFPath = paste(cdir,"1URSA_PLOT_VIOLIN_IMAGE_FEATURES_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
+    print((p1|p2)+plot_annotation(title = gsub("\\."," - ",annot_names[i]), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
-  }
+    DefaultAssay(plotx) <- "SCT"
+    p1 <- SpatialFeaturePlot(plotx, features = head(VariableFeatures(plotx), 5), ncol = 5)
+    p2 <- SpatialFeaturePlot(plotx, features = head(VariableFeatures(plotx), 5), alpha = c(0.1, 1), ncol = 5)
+    somePDFPath = paste(cdir,"2URSA_PLOT_SPATIALLY_VARIABLE_FEATURES_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
+    print(p1/p2)
+    dev.off()
 
-  print(paste("Running dimension reduction and clustering..", sep = ""))
-  VariableFeatures(data) <- unlist(lapply(data_current, VariableFeatures))
-  DefaultAssay(data) <- "SCT"
-  data <- RunPCA(data, assay = "SCT", verbose = FALSE)
-  data <- FindNeighbors(data, reduction = "pca", dims = 1:30)
-  data <- FindClusters(data, verbose = FALSE)
-  data <- RunUMAP(data, reduction = "pca", dims = 1:30)
-  data <- RunTSNE(data, reduction = "pca", dims = 1:30, check_duplicates = FALSE)
 
-  for(i in 1:length(annot_names)){
-    current <- subset(data, subset = orig.ident == annot_names[i])
-    current@images <- current@images[names(current@images) == annot_names[i]]
-    current_clusters <- as.numeric(as.character(unique(current@meta.data$seurat_clusters)))
+
+
+
+
+
+    print(paste("Running dimension reduction and clustering..", sep = ""))
+    DefaultAssay(current) <- "SCT"
+    current <- RunPCA(current, assay = "SCT", verbose = FALSE)
+    current <- RunUMAP(current, reduction = "pca", dims = 1:30)
+    current <- RunTSNE(current, reduction = "pca", dims = 1:30, check_duplicates = FALSE)
+    current <- FindNeighbors(current, reduction = "pca", dims = 1:30)
+    current <- FindClusters(current, verbose = FALSE)
+
     Idents(current) <- "seurat_clusters"
-    DefaultAssay(current) <- "Spatial"
+    DefaultAssay(current) <- "SCT"
     current_de_markers <- NULL
     current_de_markers <- FindAllMarkers(current, min.pct = 0.25, logfc.threshold = 0.25)
     current_de_markers <- data.frame(SAMPLE = annot_names[i], current_de_markers)
     current_de_markers <- current_de_markers[which(current_de_markers$p_val_adj < 0.1),]
     current_de_markers <- current_de_markers[order(current_de_markers$avg_log2FC, decreasing = T),]
+
     data_markers[[i]] <- current_de_markers
     names(data_markers)[i] <- annot_names[i]
 
     Idents(current) <- "seurat_clusters"
-    DefaultAssay(current) <- "Spatial"
+    DefaultAssay(current) <- "SCT"
     clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(current)),
                        clusters =  current$seurat_clusters,
                        ref = hpca.se, assay.type.test=1,
-                       labels = hpca.se$label.main)
+                       labels = hpca.se$label.fine)
     current$Cell_Type <- clu_ann$labels[match(current$seurat_clusters,row.names(clu_ann))]
     current@meta.data[which(is.na(current$Cell_Type)),"Cell_Type"] <- "Unidentifiable"
-    data@meta.data[which(data$orig.ident == annot_names[i]),"Cell_Type"] <- current$Cell_Type[match(row.names(data@meta.data[which(data$orig.ident == annot_names[i]),]), row.names(current@meta.data))]
-    Idents(current) <- current$Cell_Type
-    data_current[[which(names(data_current) %in% annot_names[i])]]$seurat_clusters <- current@meta.data[match(current$CELL_ID, data_current[[which(names(data_current) %in% annot_names[i])]]$CELL_ID),"seurat_clusters"]
-  }
+    Idents(current) <- "Cell_Type"
 
-  cluster_colors <- gen_colors(color_conditions$tenx, length(unique(data$seurat_clusters)))
-  names(cluster_colors) <- sort(unique(data$seurat_clusters), decreasing = F)
-  ct_colors <- gen_colors(color_conditions$colorful, length(unique(data$Cell_Type)))
-  names(ct_colors) <- sort(unique(data$Cell_Type))
-  sample_colors <- gen_colors(color_conditions$bright, length(unique(data$orig.ident)))
-  names(sample_colors) <- sort(unique(data$orig.ident), decreasing = F)
+    cluster_colors <- gen_colors(color_conditions$tenx, length(unique(current$seurat_clusters)))
+    names(cluster_colors) <- sort(unique(current$seurat_clusters), decreasing = F)
+    ct_colors <- gen_colors(color_conditions$colorful, length(unique(current$Cell_Type)))
+    names(ct_colors) <- sort(unique(current$Cell_Type))
+    sample_colors <- gen_colors(color_conditions$bright, length(unique(current$orig.ident)))
+    names(sample_colors) <- sort(unique(current$orig.ident), decreasing = F)
 
-samples <- names(data_current)
-for(i in 1:length(data_current)){
-plotx <- data_current[[i]]
-plotx$orig.ident <- ifelse(nchar(plotx$orig.ident) > 15, substr(plotx$orig.ident, 1, 15), plotx$orig.ident)
-p1 <- NULL
-p2 <- NULL
-  p1 <- VlnPlot(plotx, group.by = "orig.ident", features = "Spatial_Counts", pt.size = 0.1, cols = color_conditions$general) + NoLegend() + xlab("SAMPLE_NAME")
-  p2 <- SpatialFeaturePlot(plotx, features = "Spatial_Counts") + theme(legend.position = "right")
+    plotx <- gen10x_plotx(current, include_meta = T)
+    plotx$CLUSTERS <- plotx$seurat_clusters
 
-  somePNGPath <- paste(cdir,"1SCA_VIOLIN_IMAGE_FEATURES_",samples[i],"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
-  print((p1|p2)+plot_annotation(title = gsub("\\."," - ",samples[i]), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
-  dev.off()
+    p <- NULL
+    p <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CLUSTERS", point_size = 1, label_size = 6, numeric = T, annot = T,
+                       plot_title = paste(project_name, ": UMAP CLUSTERS", sep = ""), col = cluster_colors)
+    p <- adjust_theme(p, legend_text = 10, legend_title = 15)
 
-  cfeatures <- sample_features[[i]]
-  DefaultAssay(plotx) <- "SCT"
-    p1 <- SpatialFeaturePlot(plotx, features = head(cfeatures, 5), ncol = 5)
-    p2 <- SpatialFeaturePlot(plotx, features = head(cfeatures, 5), alpha = c(0.1, 1), ncol = 5)
-    somePNGPath <- paste(cdir,"2SCA_SPATIALLY_VARIABLE_FEATURES_",samples[i],"_",project_name,".png", sep = "")
-    png(somePNGPath, width = 4000, height =3000, units = "px", res = 300)
-    print(p1/p2)
+    somePDFPath = paste(cdir,"3URSA_PLOT_UMAP_ALL_SAMPLES_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
+    print(p)
     dev.off()
-}
 
-plotx <- data.frame(UMAP_1 = data@reductions$umap@cell.embeddings[,"UMAP_1"],
-                    UMAP_2 = data@reductions$umap@cell.embeddings[,"UMAP_2"],
-                    CLUSTERS = data@meta.data$seurat_clusters,
-                    SLIDES = data$orig.ident)
-p1 <- NULL
-p2 <- NULL
-p1 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CLUSTERS", point_size = 2, label_size = 6, numeric = T, annot = T,
-                   plot_title = paste(project_name, ": UMAP CLUSTERS", sep = ""), col = cluster_colors)
-p1 <- adjust_theme(p1)
-p2 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "SLIDES", point_size = 2,
-                   plot_title = paste(project_name, ": SLIDES", sep = ""), col = sample_colors, annot = FALSE)
-p2 <- p2+theme(legend.text = element_text(size = 10))
-p2 <- adjust_theme(p2)
+    p <- NULL
+    p <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "CLUSTERS", point_size = 1, label_size = 6, numeric = T, annot = T,
+                      plot_title = paste(project_name, ": tSNE CLUSTERS", sep = ""), col = cluster_colors)
+    p <- adjust_theme(p, legend_text = 10, legend_title = 15)
 
-somePNGPath <- paste(cdir,"3SCA_UMAP_ALL_SAMPLES_",project_name, ".png", sep = "")
-png(somePNGPath, width = 5000, height =2000, units = "px", res = 300)
-print(p1|p2)
-dev.off()
+    somePDFPath = paste(cdir,"4URSA_PLOT_tSNE_ALL_SAMPLES_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
+    print(p)
+    dev.off()
 
-p1 <- own_facet_scatter(plotx, "UMAP_1", "UMAP_2", isfacet = T, title = paste(project_name, ": UMAP CLUSTERS", sep = ""),color_by = "CLUSTERS", group_by = "SLIDES", xlabel = "UMAP_1", ylabel = "UMAP_2", strip_size = 10, col = cluster_colors, ncol = 2)
-p2 <- own_facet_scatter(plotx, "UMAP_1", "UMAP_2", isfacet = T, title = paste(project_name, ": SLIDES", sep = ""),color_by = "SLIDES", group_by = "SLIDES", xlabel = "UMAP_1", ylabel = "UMAP_2", strip_size = 10, col = sample_colors, ncol = 2)
-p2 <- p2+theme(legend.text = element_text(size = 10))
+    p <- NULL
+    p <- SpatialDimPlot(current,ncol = 1,pt.size.factor = 1.6,
+                        images = annot_names[i], cols = cluster_colors)+
+      ggtitle(annot_names[i]) +
+      labs(fill= "CLUSTERS")+
+      theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+            legend.title = element_text(size = 20),
+            legend.text = element_text(size = 15),
+            legend.key.size = unit(0.5, "cm"),
+            axis.text.x = element_text(size = 25),
+            axis.text.y = element_text(size = 25),
+            axis.title.x = element_text(size = 25, margin=margin(10,0,0,0)),
+            axis.title.y = element_text(size = 25, margin=margin(0,10,0,0)))+
+      guides(fill=guide_legend(override.aes = list(size = 5)))
 
-somePNGPath <- paste(cdir,"4SCA_UMAP_ALL_SLIDES_",project_name, ".png", sep = "")
-png(somePNGPath, width = 5000, height = ceiling(length(unique(plotx$SLIDES))/2)*1000, units = "px", res = 200)
-grid.arrange(p1,p2,ncol=2,widths=c(0.45, 0.55))
-dev.off()
+    somePDFPath = paste(cdir,"5URSA_PLOT_UMAP_SLIDE_CLUSTERS_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7.5,pointsize=12)
+    print(p)
+    dev.off()
 
-for(i in 1:length(samples)){
-p <- NULL
-p <- SpatialDimPlot(data,ncol = 1,pt.size.factor = 1.6,
-                    images = samples[i], cols = cluster_colors)+
-  ggtitle(samples[i]) +
-  labs(fill= "CLUSTERS")+
-  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
-        legend.title = element_text(size = 20),
-        legend.text = element_text(size = 15),
-        legend.key.size = unit(0.5, "cm"),
-        axis.text.x = element_text(size = 25),
-        axis.text.y = element_text(size = 25),
-        axis.title.x = element_text(size = 25, margin=margin(10,0,0,0)),
-        axis.title.y = element_text(size = 25, margin=margin(0,10,0,0)))+
-  guides(fill=guide_legend(override.aes = list(size = 5)))
+    Idents(current) <- "seurat_clusters"
+    DefaultAssay(current) <- "SCT"
+    somePDFPath = paste(cdir,"6URSA_PLOT_SLIDE_IMAGE_BY_EACH_CLUSTER_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=7,pointsize=12)
+    print(SpatialDimPlot(current, cells.highlight = CellsByIdentities(object = current,
+                                                                      idents = sort(unique(current$seurat_clusters))), facet.highlight = TRUE, ncol = 5))
+    dev.off()
 
-somePNGPath <- paste(cdir,"5SCA_UMAP_SLIDE_CLUSTERS_",samples[i],"_",project_name,".png", sep = "")
-png(somePNGPath, width = 4000, height =3000, units = "px", res = 200)
-print(p)
-dev.off()
+    Idents(current) <- "seurat_clusters"
+    plotx <- data.frame(Cluster = current$seurat_clusters,
+                        X = current@images[[annot_names[i]]]@coordinates$imagerow,
+                        Y = current@images[[annot_names[i]]]@coordinates$imagecol)
+    p1 <- NULL
+    p2 <- NULL
+    p1 <- plot_slice(plotx, pt_size = 2, plot_title = "SLICE CLUSTER VIEW", col = cluster_colors, is.facet = FALSE, annot = FALSE)
+    p1 <- p1+theme(legend.title = element_text(size = 15),
+                   legend.text = element_text(size = 15),
+                   legend.key.size = unit(0.2, "cm"))
+    p2 <- plot_slice(plotx, pt_size = 1, plot_title = "SLICE CLUSTER VIEW", col = cluster_colors, is.facet = TRUE, annot = FALSE, strip_size = 15)
 
-current <- data_current[[i]]
-Idents(current) <- "seurat_clusters"
-DefaultAssay(current) <- "SCT"
-col_left <- as.character(unique(current$seurat_clusters))[match(levels(data$seurat_clusters), as.character(unique(current$seurat_clusters)))]
-current@images <- current@images[names(current@images) == samples[i]]
-somePNGPath <- paste(cdir,"6SCA_SLIDE_IMAGE_BY_EACH_CLUSTER_",samples[i],"_",project_name, ".png", sep = "")
-png(somePNGPath, width = 4000, height =2800, units = "px", res = 200)
-print(SpatialDimPlot(current, cells.highlight = CellsByIdentities(object = current,
-                                                                  idents = as.numeric(as.character(col_left[!is.na(col_left)]))), facet.highlight = TRUE, ncol = 5))
-dev.off()
+    somePDFPath = paste(cdir,"8URSA_PLOT_UMAP_SAMPLE_IMAGE_CLUSTER_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=5,pointsize=12)
+    print((p1|p2)+plot_annotation(title = annot_names[i], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+    dev.off()
 
-plotx <- subset(data, subset = orig.ident == samples[i])
-Idents(plotx) <- "seurat_clusters"
-plotx <- data.frame(UMAP_1 = plotx@reductions$umap@cell.embeddings[,"UMAP_1"],
-                    UMAP_2 = plotx@reductions$umap@cell.embeddings[,"UMAP_2"],
-                    CLUSTERS = plotx$seurat_clusters)
+    somePDFPath = paste(cdir,"9URSA_PLOT_SPATIALLY_TOP_FEATURES_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=5,pointsize=12)
+    cclusters <- sort(as.numeric(as.character(unique(current_de_markers$cluster))))
+    for(j in 1:length(cclusters)){
+      ccurrent_de <- current_de_markers[which(current_de_markers$cluster == cclusters[j]),]
+      ccurrent_de <- ccurrent_de[order(ccurrent_de$avg_log2FC, decreasing = T),]
+      if(nrow(ccurrent_de) > 0){
+        ccurrent_de <- ccurrent_de[1:ifelse(nrow(ccurrent_de) < 5, nrow(ccurrent_de), 5),]
+        p <- NULL
+        p <- SpatialFeaturePlot(object = current, features = ccurrent_de$gene, images = annot_names[i], ncol = ifelse(nrow(ccurrent_de) < 5, nrow(ccurrent_de), 5))+plot_annotation(title = paste(annot_names[i],": CLUSTER ", cclusters[j], sep = ""))
+        print(p)
+      }
+    }
+    dev.off()
 
-somePNGPath <- paste(cdir,"7SCA_UMAP_SAMPLE_CLUSTER_",samples[i],"_",project_name, ".png", sep = "")
-png(somePNGPath, width = 4000, height = 3000, units = "px", res = 300)
-print(plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CLUSTERS", plot_title = paste(samples[i], ": UMAP CLUSTERS", sep = ""), annot = T, label_size = 8, point_size = 2, numeric = T, col = data()[['cluster_colors']]))
-dev.off()
+    write.table(current_de_markers, paste(cdir,"10URSA_PLOT_TABLE_DATA_CLUSTER_DEG_",annot_names[i],"_",project_name, ".txt", sep = ""), row.names = F, quote = F, sep = "\t")
 
-plotx <- subset(data, subset = orig.ident == samples[i])
-Idents(plotx) <- "seurat_clusters"
-plotx <- data.frame(Cluster = plotx$seurat_clusters,
-                    X = plotx@images[[samples[i]]]@coordinates$imagerow,
-                    Y = plotx@images[[samples[i]]]@coordinates$imagecol)
+    current_de <- current_de_markers[current_de_markers$p_val_adj < 0.1,]
+    current_de <- current_de[order(current_de$avg_log2FC, decreasing = T),]
+    current_de <- split(current_de, current_de$cluster)
+    top_markers <- NULL
+    for(j in 1:length(current_de)){
+      if(nrow(current_de[[j]]) > 0){
+        top_markers <- rbind(top_markers,current_de[[j]][1,])
+      }
+    }
 
-col_left <- as.character(unique(plotx$Cluster))[match(levels(data@meta.data$seurat_clusters), as.character(unique(plotx$Cluster)))]
+    DefaultAssay(current) <- "Spatial"
+    p <- NULL
+    p <- VlnPlot(current, group.by = "seurat_clusters", features = unique(top_markers$gene),
+                 pt.size = 0, ncol = 2, cols = cluster_colors, log = T)
+    p <- p+plot_annotation(title = paste("TOP GENE IN EACH CLUSTER\nLog(Average Expression)", sep = ""), theme = theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
 
-p1 <- NULL
-p2 <- NULL
-p1 <- plot_slice(plotx, pt_size = 3, plot_title = "SLICE CLUSTER VIEW", col = cluster_colors[which(!is.na(col_left))], is.facet = FALSE, annot = FALSE)
-p1 <- p1+theme(legend.title = element_text(size = 15),
-               legend.text = element_text(size = 15),
-               legend.key.size = unit(0.2, "cm"))
-p2 <- plot_slice(plotx, pt_size = 1.5, plot_title = "SLICE CLUSTER VIEW", col = cluster_colors[which(!is.na(col_left))], is.facet = TRUE, annot = FALSE, strip_size = 15)
-somePNGPath <- paste(cdir,"8SCA_UMAP_SAMPLE_IMAGE_CLUSTER_",samples[i],"_",project_name, ".png", sep = "")
-png(somePNGPath, width = 4000, height =2000, units = "px", res = 300)
-print((p1|p2)+plot_annotation(title = samples[i], theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
-dev.off()
+    somePDFPath = paste(cdir,"11URSA_PLOT_VIOLINPLOT_TOP_MARKERS_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=10, height=2*ceiling(length(unique(top_markers$gene))/2),pointsize=12)
+    print(p&xlab("CLUSTERS"))
+    dev.off()
 
-current <- subset(data, subset = orig.ident == samples[i])
-current_de <- data_markers[[samples[i]]]
-cclusters <- as.character(unique(current_de$cluster))
-for(j in 1:length(cclusters)){
-ccurrent_de <- current_de[which(as.character(current_de$cluster) == as.character(cclusters[j])),]
-if(nrow(ccurrent_de) > 0){
-  ccurrent_de <- ccurrent_de[1:ifelse(nrow(ccurrent_de) < 5, nrow(ccurrent_de), 5),]
-  p <- NULL
-  p <- SpatialFeaturePlot(object = current, features = ccurrent_de$gene, images = samples[i], ncol = ifelse(nrow(ccurrent_de) < 5, nrow(ccurrent_de), 5))
-  somePNGPath <- paste(cdir,"9SCA_SPATIALLY_TOP_FEATURES_",samples[i],"_CLUSTER_",cclusters[j],"_",project_name, ".png", sep = "")
-  png(somePNGPath, width = 4000, height =2800, units = "px", res = 200)
-  print(p)
-  dev.off()
-}
-}
+    Idents(current) <- current$Cell_Type
+    plotx <- gen10x_plotx(current, include_meta = T)
+    p1 <- NULL
+    p2 <- NULL
+    p <- NULL
+    p1 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "Cell_Type", plot_title = "SPATIAL UMAP - CELL TYPE",
+                       col = ct_colors, annot = TRUE, legend_position = "right", point_size = 1)
+    p2 <- SpatialDimPlot(current,ncol = 1,pt.size.factor = 1.6,images = annot_names[i],
+                         cols = ct_colors)+
+      ggtitle("SPATIAL SLIDE - CELL TYPE") +
+      labs(fill= "CELL TYPES")+
+      theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5),
+            legend.title = element_text(size = 15),
+            legend.text = element_text(size = 15),
+            legend.key.size = unit(1, "cm"))+
+      guides(fill=guide_legend(override.aes = list(size = 5)))
+    p <- (p1/p2)+plot_annotation(title = paste(project_name,": ",annot_names[i],sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
 
-write.csv(data_markers[[i]], paste(cdir, "10SCA_TABLE_DATA_CLUSTER_DEG_",samples[i],".csv",sep = ""),row.names = F)
+    somePDFPath = paste(cdir,"12URSA_PLOT_UMAP_AUTO_CELLTYPE_ANNOTATIONS_",annot_names[i],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=15, height=10,pointsize=12)
+    print(p)
+    dev.off()
 
-current_de <- current_de[current_de$p_val_adj < 0.1,]
-current_de <- current_de[order(current_de$avg_log2FC, decreasing = T),]
-current_de <- split(current_de, current_de$cluster)
-top_markers <- NULL
-for(j in 1:length(current_de)){
-  if(nrow(current_de[[j]]) > 0){
-    top_markers <- rbind(top_markers,current_de[[j]][1,])
+    if(run_rnaseq == TRUE){
+    scrna_files <- list.files(rnaseq_dir, pattern = "\\.h5$", ignore.case = T, full.names = T, recursive = T)
+    if(length(scrna_files) > 0){
+      for(i in 1:nrow(pheno_data)){
+      cfile <- NULL
+      cfile <- scrna_files[grep(pheno_data[i,"SAMPLE_ID"], scrna_files, ignore.case = T)]
+      if((length(cfile) > 0)){
+      scrna_data <- Read10X_h5(filename = cfile)
+      if((length(scrna_data) == 1) | (length(scrna_data) > 10)){
+        scrna_data <- CreateSeuratObject(counts = scrna_data, project = pheno_data[i,"SAMPLE_ID"], min.cells = 3, min.features = 200)
+      }else{
+        scrna_data <- CreateSeuratObject(counts = scrna_data$`Gene Expression`, project = pheno_data[i,"SAMPLE_ID"], min.cells = 3, min.features = 200)
+      }
+      scrna_data[["Percent_Mito"]] <- PercentageFeatureSet(scrna_data, pattern = "^MT-")
+      scrna_data <- subset(scrna_data, subset = nFeature_RNA > 200 & nFeature_RNA < 20000 & Percent_Mito < 5)
+    scrna_data <- SCTransform(scrna_data, ncells = 3000, verbose = FALSE) %>% RunPCA(verbose = FALSE)
+    scrna_data <- RunUMAP(scrna_data, reduction = "pca", dims = 1:ifelse(length(scrna_data@reductions$pca) < 30, length(scrna_data@reductions$pca), 30))
+    scrna_data <- RunTSNE(scrna_data, reduction = "pca", dims = 1:ifelse(length(scrna_data@reductions$pca) < 30, length(scrna_data@reductions$pca), 30), check_duplicates = FALSE)
+    scrna_data <- FindNeighbors(scrna_data, reduction = "pca", dims = 1:ifelse(length(scrna_data@reductions$pca) < 30, length(scrna_data@reductions$pca), 30))
+    scrna_data <- FindClusters(scrna_data, verbose = FALSE)
+
+    plotx <- gen10x_plotx(scrna_data, include_meta = T)
+    plotx$Cluster <- scrna_data$seurat_clusters
+
+    somePDFPath = paste(cdir,"13URSA_PLOT_scRNASEQ_UMAP_BY_CLUSTERS_",pheno_data[i,"SAMPLE_ID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=14, height=10,pointsize=10)
+    p <- plot_bygroup(plotx, "UMAP_1", "UMAP_2", "Cluster", paste("scRNASEQ - UMAP: ", pheno_data[i,"SAMPLE_ID"], sep = ""), col = NULL, numeric = TRUE, point_size = 1)
+    print(p)
+    dev.off()
+
+    somePDFPath = paste(cdir,"14URSA_PLOT_scRNASEQ_tSNE_BY_CLUSTERS_",pheno_data[i,"SAMPLE_ID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=14, height=10,pointsize=10)
+    p <- plot_bygroup(plotx, "tSNE_1", "tSNE_2", "Cluster", paste("scRNASEQ- tSNE: ", pheno_data[i,"SAMPLE_ID"], sep = ""), col = NULL, numeric = TRUE, point_size = 2)
+    print(p)
+    dev.off()
+
+    Idents(scrna_data) <- "seurat_clusters"
+    DefaultAssay(scrna_data) <- "RNA"
+    clu_ann <- SingleR(test = as.SingleCellExperiment(DietSeurat(scrna_data)),
+                       clusters =  scrna_data$seurat_clusters,
+                       ref = hpca.se, assay.type.test=1,
+                       labels = hpca.se$label.fine)
+
+    scrna_data$Cell_Type <- clu_ann$labels[match(scrna_data$seurat_clusters,row.names(clu_ann))]
+    scrna_data@meta.data[which(is.na(scrna_data$Cell_Type)),"Cell_Type"] <- "Unidentifiable"
+    Idents(scrna_data) <- scrna_data$Cell_Type
+    plotx <- gen10x_plotx(scrna_data, include_meta = T)
+
+    p1 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "Cell_Type", plot_title = paste(pheno_data[i,"SAMPLE_ID"], ": scRNASEQ UMAP - CELL TYPE", sep = ""), col = color_conditions$tenx, annot = TRUE, legend_position = "bottom", point_size = 1)
+    p2 <- plot_bygroup(plotx, x = "tSNE_1", y = "tSNE_2", group = "Cell_Type", plot_title = paste(pheno_data[i,"SAMPLE_ID"], ": scRNASEQ tSNE - CELL TYPE", sep = ""),
+                       col = color_conditions$tenx, annot = TRUE, legend_position = "bottom", point_size = 1)
+
+    somePDFPath = paste(cdir,"15URSA_PLOT_scRNASEQ_UMAP_TSNE_AUTO_CELL_TYPE_",pheno_data[i,"SAMPLE_ID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=20, height=10,pointsize=12)
+    print((p1|p2)+plot_annotation(title = paste(project_name,sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
+    )
+    dev.off()
+
+    Idents(scrna_data) <- "Cell_Type"
+    DefaultAssay(scrna_data) <- "SCT"
+    DefaultAssay(current) <- "SCT"
+    Idents(current) <- "Cell_Type"
+
+    data_anchors <- FindTransferAnchors(reference = scrna_data, query = current, normalization.method = "SCT")
+    predictions_assay <- TransferData(anchorset = data_anchors, refdata = scrna_data$Cell_Type,
+                                      prediction.assay = TRUE,
+                                      weight.reduction = current[["pca"]], dims = 1:ifelse(length(scrna_data@reductions$pca) < 30, length(scrna_data@reductions$pca), 30))
+    current[["predictions"]] <- predictions_assay
+
+    DefaultAssay(current) <- "predictions"
+    Idents(current) <- "Cell_Type"
+    cell_types <- unique(scrna_data$Cell_Type)
+    p <- SpatialFeaturePlot(current, features = row.names(current)[grep("^max$", row.names(current), ignore.case = T, invert = T)], pt.size.factor = 1.6, ncol = 2, crop = TRUE)
+    p <- p+plot_annotation(title = paste("CELL TYPE PREDICTION SCORE: ", pheno_data[i,"SAMPLE_ID"], sep = ""), theme = theme(plot.title = element_text(size = 10, face = "bold", hjust = 0.5)))
+
+    somePDFPath = paste(cdir,"16URSA_PLOT_scRNASEQ_IMAGE_BY_scRNASEQ_PREDICTION_SCORES_",pheno_data[i,"SAMPLE_ID"],"_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=12, height=3*length(cell_types),pointsize=10)
+    print(p)
+    dev.off()
+
+    DefaultAssay(current) <- "predictions"
+    p <- VlnPlot(current, group.by = "seurat_clusters", features = row.names(current)[grep("^max$", row.names(current), ignore.case = T, invert = T)],
+                 pt.size = 0, ncol = 2, cols = gen_colors(color_conditions$tenx, length(unique(current$seurat_clusters))))
+    p <- p+plot_annotation(title = paste(pheno_data[i,"SAMPLE_ID"], ": CELL TYPE PREDICTION SCORES PER CLUSTER", sep = ""), theme = theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
+
+    somePDFPath = paste(cdir,"17URSA_PLOT_scRNASEQ_VIOLIN_PREDICTION_SCORES_CLUSTERS_",project_name,".pdf", sep = "")
+    pdf(file=somePDFPath, width=14, height=6*ceiling(length(cell_types)/2),pointsize=10)
+    print(p&xlab("CLUSTERS"))
+    dev.off()
+      }
+      }
+    }
+
+    data_current[[i]] <- current
+    names(data_current)[i] <- cname
+
   }
-}
-
-DefaultAssay(current) <- "Spatial"
-p <- NULL
-p <- VlnPlot(current, group.by = "seurat_clusters", features = unique(top_markers$gene),
-             pt.size = 0, ncol = 2, cols = cluster_colors, log = T)
-p <- p+plot_annotation(title = paste("TOP GENE IN EACH CLUSTER\nLog(Average Expression)", sep = ""), theme = theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5)))
-
-somePNGPath <- paste(cdir,"11SCA_VIOLINPLOT_TOP_MARKERS_",samples[i],"_",project_name, ".png", sep = "")
-png(somePNGPath, width = 4000, height =400*ceiling(length(unique(top_markers$gene))/2), units = "px", res = 200)
-print(p&xlab("CLUSTERS"))
-dev.off()
-
-Idents(current) <- current$Cell_Type
-plotx <- data.frame(UMAP_1 = current@reductions$umap@cell.embeddings[,"UMAP_1"],
-                    UMAP_2 = current@reductions$umap@cell.embeddings[,"UMAP_2"],
-                    CELL_TYPE = current$Cell_Type)
-p1 <- NULL
-p2 <- NULL
-p <- NULL
-p1 <- plot_bygroup(plotx, x = "UMAP_1", y = "UMAP_2", group = "CELL_TYPE", plot_title = "SPATIAL UMAP - CELL TYPE",
-                   col = ct_colors, annot = TRUE, legend_position = "right", point_size = 2)
-p2 <- SpatialDimPlot(current,ncol = 1,pt.size.factor = 1.6,images = samples[i],
-                     cols = ct_colors[which(names(ct_colors) %in% unique(current$Cell_Type))])+
-  ggtitle("SPATIAL SLIDE - CELL TYPE") +
-  labs(fill= "CELL TYPES")+
-  theme(plot.title = element_text(size = 15, face = "bold", hjust = 0.5),
-        legend.title = element_text(size = 15),
-        legend.text = element_text(size = 15),
-        legend.key.size = unit(1, "cm"))+
-  guides(fill=guide_legend(override.aes = list(size = 5)))
-p <- (p1/p2)+plot_annotation(title = paste(project_name,": ",samples[i],sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5)))
-
-
-somePNGPath <- paste(cdir,"12SCA_UMAP_AUTO_CELLTYPE_ANNOTATIONS_",samples[i],"_",project_name,".png", sep = "")
-png(somePNGPath, width = 4000, height =4000, units = "px", res = 300)
-print(p)
-dev.off()
-
-}
-
-
-
-
-
+saveRDS(data_current, paste(cdir,"13URSA_SPATIAL_DATA_",annot_names[i],"_",project_name,".RDS", sep = ""))
+print("Completed!")
 
 }
