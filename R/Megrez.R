@@ -351,7 +351,6 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   data_prop <- melt(data_prop)
   colnames(data_prop) <- c("Sample","Cluster","Proportion")
 
-  print("post melt(data_prop)")
   cn_clusters <- data.frame(cell_id = unique(selected_data$cell_id))
   cn_clusters$Cluster <- dapc_out$assign[match(cn_clusters$cell_id,row.names(dapc_out$posterior))]
   cn_clusters$copy_number <- round(data_summary$mean_ploidy)[match(cn_clusters$cell_id, paste(data_summary$Sample,data_summary$cell_id,sep = "_"))]
@@ -374,14 +373,14 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   clusters <- split(plotx[,"Cluster"], plotx$Cluster)
   tree_est <- groupOTU(tree_est, clusters)
   tree_est$plotx <- plotx
-  print("pre CreateUrsa")
   CreateUrsa <- setClass("Ursa", slots=list(project = "character",assay = "character",
                                                   data="list", cell_stats="data.frame", dim = "data.frame",
                                                   binary_cnv = "data.frame",selected_chrom = "data.frame",
                                                   chrom_bar = "data.frame", proportion = "data.frame",
                                                   tree = "phylo", color_schemes = "list"))
-
+print("post setClass")
  ccolor_schemes <- ini_colorschemes(assay = "scCNV", data = list(data_cell_stats = data_cell_stats, umap_coords = umap_coords))
+ print("post ccolor_schemes")
 
  results <- CreateUrsa(project = project_name,assay = "scCNV", data = data_current,
                 cell_stats = data_cell_stats, dim = umap_coords,
@@ -390,9 +389,10 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
                 chrom_bar = select_bychrom_data_bar,
                 proportion = data_prop, tree = tree_est,
                 color_schemes = ccolor_schemes)
-  saveRDS(results, paste(cdir,"1URSA_DATA_scCNV_RESULT_",project_name,".RDS", sep = ""))
+ print("post CreateUrsa")
 
   plot_ploidy(results, cdir)
+  print("post plot_ploidy")
 
   p <- NULL
   p <- ggplot(results@cell_stats, aes(x = Mean_ploidy, y = Sample)) +
@@ -453,5 +453,8 @@ scCNVPip <- function(project_name = "Ursa_scCNV",
   png(somePNGPath, width = 3000, height =2000, units = "px", res = 300)
   print(p)
   dev.off()
+
+  saveRDS(results, paste(cdir,"9URSA_DATA_scCNV_RESULT_",results@project,".RDS", sep = ""))
+  print("Completed!")
 
 }
