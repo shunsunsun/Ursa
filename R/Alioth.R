@@ -614,13 +614,13 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       dev.off()
 
       ################ Pathway Analysis #########################################################################
-      # n <- 500
       filtered_markers <- current_out$current_data_markers[grep("AC[0-9]+\\.[0-9]+|AL[0-9]+\\.[0-9]+",current_out$current_data_markers$gene, ignore.case = T, invert = T),]
       topn <- split(filtered_markers, filtered_markers$cluster)
       topn <- lapply(topn, function(x){
       x <- x[which(abs(x$avg_log2FC) > 0.25),]
       })
       topn <- do.call(rbind.data.frame, topn)
+      topn <- topn[order(topn$avg_log2FC, decreasing = T),]
       if(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2){
         topn$ENSEMBL_ID <- gsub("(ENS.*?[0-9]+)[-|_|\\s+|\\.].*","\\1",topn$gene)
         mapped_id <- ensembldb::select(hs, keys = topn$ENSEMBL_ID, columns = c("ENTREZID", "SYMBOL"), keytype = "ENSEMBL")
