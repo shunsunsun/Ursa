@@ -4,15 +4,15 @@
 
 __Ursa__ is an R package consisting of seven single-cell omics automated analysis workflows. One-liner command for each omics to run a full post-quantification analysis for the omics.
 
-Seven single-cell omics include:
+Six single-cell (sc) omics and one bulk omics include:
 
-1. scRNA-sequencing
-2. scATAC-sequencing
-3. scImmune profiling
-4. Spatial transcriptomics
-5. scCNV
-6. CyTOF
-7. Flow cytometry
+1. scRNA-sequencing (sc)
+2. scATAC-sequencing (sc)
+3. scImmune profiling (sc)
+4. scCNV (sc)
+5. CyTOF (sc)
+6. Flow cytometry (sc)
+7. Spatial transcriptomics (bulk)
 
 ## Installation
 
@@ -20,6 +20,7 @@ Ursa can be installed in R via the command:
 ```sh
 devtools::install_github('eudoraleer/Ursa')
 ```
+Please download the example meta files from the Github directory (__https://github.com/eudoraleer/Ursa/tree/master/DB/Examples/Meta_Files__) with respect to the omics you will be running
 
 ## Running single-cell analysis with Ursa
 ##### (1) scRNA-sequencing
