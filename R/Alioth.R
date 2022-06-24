@@ -7,6 +7,7 @@
 ############################################################################################################
 #' @include ini.R
 #' @include common.R
+#' @import celltalker
 #' @import ComplexHeatmap
 #' @import cowplot
 #' @import data.table
@@ -1285,6 +1286,52 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
                                                group_by = "GROUP", title = project_name,
                                                col = ct_colors))
     dev.off()
+
+    #################################### RECEPTOR-LIGAND #########################################################
+    ligs <- as.character(unique(ramilowski_pairs$ligand))
+    recs <- as.character(unique(ramilowski_pairs$receptor))
+    ligs.present <- rownames(data)[rownames(data) %in% ligs]
+    recs.present <- rownames(data)[rownames(data) %in% recs]
+    genes.to.use <- union(ligs.present,recs.present)
+
+    Idents(data) <- "INTEGRATED_CELL_TYPE"
+    data_interactions <- celltalk(input_object=data,
+                                  metadata_grouping="INTEGRATED_CELL_TYPE",
+                                  ligand_receptor_pairs=ramilowski_pairs,
+                                  number_cells_required=10,
+                                  min_expression=10,
+                                  max_expression=20000,
+                                  scramble_times=100)
+
+    top_stats <- data_interactions %>%
+      filter(p_val<0.05) %>%
+      group_by(cell_type1) %>%
+      top_n(3,interact_ratio) %>%
+      ungroup()
+
+    somePDFPath = paste(cdir,"64URSA_PLOT_scRNASEQ_RECEPTOR_LIGAND_TOP_INTERACTIONS_INTEGRATED_DATA_CELL_TYPES_", integration_name, project_name, ".pdf", sep = "")
+    pdf(file=somePDFPath, width=16, height=10,pointsize=10)
+    circos.clear()
+    circos_plot(ligand_receptor_frame=top_stats,
+                cell_group_colors=ct_colors,
+                ligand_color=color_conditions$general[3],
+                receptor_color=color_conditions$general[1],
+                cex_outer=1.6,
+                cex_inner=0.8)
+    lgd_celltypes = Legend(at = c("Receptor","Ligand"),
+                           labels = c("Receptor","Ligand"),
+                           type = "grid",
+                           legend_gp = gpar(fill =c(color_conditions$general[c(1,3)])), title_position = "topleft",
+                           title = "Legend")
+    lgd_list_vertical = packLegend(lgd_celltypes)
+    lgd_list_vertical
+    circle_size = unit(1.25, "snpc")
+    draw(lgd_list_vertical, x = circle_size, just = "left")
+    dev.off()
+
+    data_interactions <- data_interactions[which(data_interactions$p_val < 0.05),]
+    data_interactions <- data_interactions[order(data_interactions$interact_ratio, decreasing = T),]
+    write.table(data_interactions, paste(cdir, "64URSA_PLOT_scRNASEQ_RECEPTOR_LIGAND_P005_INTERACTIONS_INTEGRATED_DATA_CELL_TYPES_",integration_name,"_",project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
 
     #################################### MEDIAN EXPRESSION #########################################################
 
