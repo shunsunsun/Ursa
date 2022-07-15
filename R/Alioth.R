@@ -1841,8 +1841,8 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
     named_clusters <- data@meta.data[,integration_cluster]
     names(named_clusters) <- row.names(data@meta.data)
     reducedDim(mono3data, type = "PCA") <- data@reductions[[reduction_method]]@cell.embeddings
-    mono3data@preprocess_aux$prop_var_expl <- data@reductions$pca@stdev
-    mono3data@preprocess_aux$gene_loadings <- data@reductions[[reduction_method]]@feature.loadings
+    mono3data@reduce_dim_aux$prop_var_expl <- data@reductions$pca@stdev
+    mono3data@reduce_dim_aux$gene_loadings <- data@reductions[[reduction_method]]@feature.loadings
     mono3data@int_colData@listData$reducedDims$UMAP <- data@reductions$umap@cell.embeddings
     mono3data@clusters$UMAP$clusters <- named_clusters
     mono3data@clusters@listData[["UMAP"]][["clusters"]] <- named_clusters
