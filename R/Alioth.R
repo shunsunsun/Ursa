@@ -1607,8 +1607,8 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
 
     ##### UMAP ######
     reducedDim(mono3_current[[j]], type = "PCA") <- data_current[[j]]@reductions$pca@cell.embeddings
-    mono3_current[[j]]@preprocess_aux$prop_var_expl <- data_current[[j]]@reductions$pca@stdev
-    mono3_current[[j]]@preprocess_aux$gene_loadings <- data_current[[j]]@reductions[["pca"]]@feature.loadings
+    mono3_current[[j]]@reduce_dim_aux$prop_var_expl <- data_current[[j]]@reductions$pca@stdev
+    mono3_current[[j]]@reduce_dim_aux$gene_loadings <- data_current[[j]]@reductions[["pca"]]@feature.loadings
     mono3_current[[j]]@int_colData@listData$reducedDims$UMAP <- data_current[[j]]@reductions$umap@cell.embeddings
     mono3_current[[j]]@clusters$UMAP$clusters <- data_current[[j]]$seurat_clusters
     mono3_current[[j]]@clusters@listData[["UMAP"]][["clusters"]] <- data_current[[j]]$seurat_clusters
