@@ -1,9 +1,9 @@
 ############################################################################################################
 # Ursa: an automated multi-omics package for single-cell analysis
 # Alioth: scRNASEQ
-# Version: V1.0.0
+# Version: V1.1.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
-# Date: 2022-02-16
+# Last Update Date: 2022-08-31
 ############################################################################################################
 #' @include ini.R
 #' @include common.R
@@ -45,6 +45,13 @@
 #' @import Seurat
 #' @import SeuratWrappers
 #' @import SingleR
+#' @import findPC
+#' @import DoubletFinder
+#' @import scubi
+#' @import slingshot
+#' @import tscan
+#' @import tradeSeq
+#' @import Mclust
 #'
 NULL
 
@@ -57,9 +64,9 @@ NULL
 #' pipeline. Supports multiple samples analysis.
 #'
 #' @param project_name Project name. 'Ursa_scRNASEQ' by default.
-#' @param input_dir Directory to all input files. Current working directory by
+#' @param input_dir Directory to all input files. Default directory is the current working directory.
 #' default.
-#' @param output_dir Output directory. Current working directory by default.
+#' @param output_dir Output directory. Default directory is the current working directory.
 #' A new folder with the given project name with time stamp as suffix will be
 #' created under the specified output directory.
 #' @param pheno_file Meta data file directory. Accept only .csv/.txt format
@@ -72,18 +79,27 @@ NULL
 #' @param cc_regression Cell cycle regression method. Accepts 0 for no regression,
 #' 1 for regression with two-phases, 2 for regression with phase difference (See Seurat).
 #' Default is 0.
-#' @export
+#' @param pc_selection_method Select a method to run an automatic selection of the number of principal components (PCs) or Harmonys(if harmony was chosen for integration). Methods include 'none', 'all', 'piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', and 'k-means clustering'. Default is set to 'none', which will ignore this option and use the stated number of PCs in the num_pcs option. If 'all' is used, all methods will be assessed and the final PC number will be determined via the mean of the output of all methods. For more information, please visit: https://github.com/haotian-zhuang/findPC (Zhuang et al., Bioinformatics, 2022)
+#' @param num_pcs Number of PCs or Harmonys (if harmony was chosen for integration) to be used for the analysis. Default to 30. Please state a reasonable number which is no more than the total number of cells submitted to avoid running into errors. This option will only be considered if option pc_selection_method is set to 'none'.
+#' @param to_impute Pass 'YES' to perform imputation on individual samples or 'NO' to skip imputation process. Default is set to 'NO'.
+#' @param find_doublet Pass 'YES' to perform doublets removal using DoubletFinder (Christopher S. M., Cell Systems, 2019). Default is set to 'NO'. If set to 'YES', doublets willbe removed using the true doublet rate (TDR).
+#' @export run_unbias_vis Plot additional unbias visualizations for top features using SCUBI (Wenpin H. & Zhicheng J., Cell Reports Methods, 2021) for dimensionally reduced plots such as UMAP. Pass 'YES' to plot, default to 'NO'.
 #'
 
 scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
                       input_dir = "./",
                       output_dir = "./",
-                      pheno_file,
+                      pheno_file = "study_meta.csv",
                       num_genes_lower_bound = 200,
                       num_genes_upper_bound = 25000,
                       mito_cutoff = 5,
                       integration_method = "Seurat",
-                      cc_regression = 0){
+                      cc_regression = 0,
+                      pc_selection_method = "none",
+                      num_pcs = 30,
+                      to_impute = "NO",
+                      find_doublet = "NO",
+                      run_unbias_vis = "NO"){
   print("Initialising pipeline environment..")
   hs <- org.Hs.eg.db
   data("hgnc.table", package="HGNChelper")
@@ -95,7 +111,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
   pheno_data$SID <- paste(pheno_data$SAMPLE_ID, pheno_data$GROUP, sep = "_")
   color_conditions <- color_ini()
   ctime <- time_ini()
-  sample_colors <- gen_colors(color_conditions$monet, length(unique(pheno_data$SID)))
+  sample_colors <- gen_colors(n = length(unique(pheno_data$SID)))
   names(sample_colors) <- unique(pheno_data$SID)
   project_name <- gsub("\\s+|\\(|\\)|-|\\/|\\?","",project_name)
   print(paste("Creating output folder ",project_name,"_",ctime," ..", sep = ""))
@@ -104,12 +120,23 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
   sample_files <- list.files(input_dir, pattern = ".*h5", full.names = T, ignore.case = T, recursive = T)
   sample_files <- sample_files[grep("_MACOSX",sample_files, ignore.case = T, invert = T)]
+
+  # Imputation
+  source("https://raw.githubusercontent.com/KlugerLab/ALRA/master/alra.R")
+
   #######################################################################################################################################
   print("Preparing..")
   data <- NULL
   data_current <- NULL
   annot_names <- NULL
   results <- NULL
+
+  overall_pcs <- NULL
+  if(pc_selection_method == "none"){
+    overall_pcs <- as.numeric(as.character(num_pcs))
+  }else{
+    overall_pcs <- pc_selection_method
+  }
 
   for(j in 1:nrow(pheno_data)){
     print(paste("Running ", pheno_data[j,"FILE"], "..", sep = ""))
@@ -208,9 +235,20 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       print(p1 / p2 + plot_annotation(title = paste("Before Cell Cycle Regression - ",annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
-      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
+      selected_pcs <- NULL
+      if(class(overall_pcs) == "numeric"){
+        selected_pcs <- overall_pcs
+      }else if (toupper(overall_pcs) == toupper("all")){
+        selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = 'all',aggregate = 'mean')
+      }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+        selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = tolower(overall_pcs))
+      }
+
+      print(paste("Selected number of PCs to use for sample ", annot_names[j], ": ", selected_pcs, sep = ""))
+
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:selected_pcs)
       data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
-      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
       p1 <- own_2d_scatter(data_current[[j]], "umap", "Phase", "UMAP Based on Variable Features")
       p2 <- own_2d_scatter(data_current[[j]], "umap_selected", "Phase", "UMAP Based on G2/M and S Phase Markers")
@@ -222,7 +260,17 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
     }else{
       data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
-      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+      selected_pcs <- NULL
+      if(class(overall_pcs) == "numeric"){
+        selected_pcs <- overall_pcs
+      }else if (toupper(overall_pcs) == toupper("all")){
+        selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = 'all',aggregate = 'mean')
+      }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+        selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = tolower(overall_pcs))
+      }
+      print(paste("Selected number of PCs to use for sample ", annot_names[j], ": ", selected_pcs, sep = ""))
+
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
     }
 
     metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
@@ -243,9 +291,23 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
     ########################################################################################################################
     # Filtering
     data_current[[j]] <- subset(data_current[[j]], subset = nFeature_RNA > num_genes_lower_bound & nFeature_RNA <= num_genes_upper_bound & Percent_Mito < mito_cutoff)
+
     if(ncol(data_current[[j]]) > 200){
 
       data_current[[j]] <- NormalizeData(data_current[[j]], verbose = TRUE)
+
+      # Imputation
+      if(toupper(to_impute) == "YES"){
+        print("Performing imputation using ALRA..")
+        cimpute_norm <- NULL
+        cimpute_norm <- t(as.matrix(data_current[[j]]@assays$RNA@data))
+        k_choice <- choose_k(cimpute_norm)
+        cimpute_norm <- alra(cimpute_norm,k=k_choice$k)[[3]]
+        cimpute_norm <- t(cimpute_norm)
+        colnames(cimpute_norm) <- colnames(data_current[[j]])
+        data_current[[j]]@assays$RNA@data <- cimpute_norm
+      }
+
       data_current[[j]]@assays$RNA@data@x[is.na(data_current[[j]]@assays$RNA@data@x)] <- 0
       data_current[[j]] <- FindVariableFeatures(data_current[[j]],selection.method = "vst")
       data_current[[j]] <- ScaleData(data_current[[j]], features = rownames(data_current)[j])
@@ -288,9 +350,9 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
         }
 
         data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
-        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(length(data_current[[j]]@reductions$pca_selected) < 30, length(data_current[[j]]@reductions$pca_selected), 30))
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:selected_pcs)
         data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
-        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
         metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
@@ -336,7 +398,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       }else{
         DefaultAssay(data_current[[j]]) <- 'RNA'
         data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
-        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
         metrics <- colnames(data_current[[j]]@meta.data)[grep("nCount_RNA|nFeature_RNA|S.Score|G2M.Score|Percent_Mito", colnames(data_current[[j]]@meta.data), ignore.case = T)]
 
@@ -361,6 +423,29 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
       plotx <- data_current[[j]]@meta.data
       colnames(plotx)[grep("orig.ident", colnames(plotx), ignore.case = T)] <- "SAMPLE_ID"
+
+      if(is.null(data_current[[j]]@commands$NormalizeData.RNA)){
+        temp <- NULL
+        temp <- NormalizeData(data_current[[j]])
+        data_current[[j]]@commands$NormalizeData.RNA <- temp@commands$NormalizeData.RNA
+      }
+      temp <- NULL
+      temp <- data_current[[j]]
+      sweep.res.list <- paramSweep_v3(temp, PCs = 1:selected_pcs, sct = FALSE)
+      sweep.stats <- summarizeSweep(sweep.res.list, GT = FALSE)
+      bcmvn <- find.pK(sweep.stats)
+      bcmvn$pK <- as.numeric(as.character(bcmvn$pK))
+      cpK <- as.numeric(as.character(bcmvn[which.max(bcmvn$BCmetric),"pK"]))
+      nExp_poi <- round(0.075*nrow(temp@meta.data))
+      temp <- doubletFinder_v3(temp, PCs = 1:selected_pcs, pN = 0.25, pK = cpK, nExp = nExp_poi, reuse.pANN = FALSE, sct = FALSE)
+      data_current[[j]]@meta.data <- cbind(data_current[[j]]@meta.data, temp@meta.data[,grep("^pANN_|^DF\\.classifications_", colnames(temp@meta.data), ignore.case = T)])
+      cdoublets <- NULL
+      cclassname <- NULL
+      cclassname <- colnames(data_current[[j]]@meta.data)[grep("^DF\\.classifications_", colnames(data_current[[j]]@meta.data), ignore.case = T)]
+      cdoublets <- table(data_current[[j]]@meta.data[,cclassname])
+      cdoublets <- cdoublets[grep("Doublet", names(cdoublets), ignore.case = T)]
+      print(paste(annot_names[j],": found ",cdoublets, " doublets out of ", ncol(data_current[[j]])," cells..removing..", sep = ""))
+      data_current[[j]] <- subset(data_current[[j]], cells = row.names(data_current[[j]]@meta.data[which(data_current[[j]]@meta.data[,cclassname] == "Singlet"),]))
 
       p1 <- NULL
       p2 <- NULL
@@ -423,21 +508,21 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
               plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
-      somePDFPath = paste(cdir,"14SCA_PLOT_HEATMAP_PC1_TOP_FEATURES_",annot_names[j],"_",project_name,".pdf", sep = "")
+      somePDFPath = paste(cdir,"14SCA_PLOT_HEATMAP_PC1_TO_15_TOP_FEATURES_",annot_names[j],"_",project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=8, height=16,pointsize=12)
       print(DimHeatmap(data_current[[j]], dims = 1:15, cells = 500, balanced = TRUE, fast = FALSE, assays = "RNA")+
               plot_annotation(title = paste(annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
-      data_current[[j]] <- FindNeighbors(data_current[[j]], dims = 1:ifelse(ncol(data_current[[j]]) > 30, 30, ncol(data_current[[j]])))
+      data_current[[j]] <- FindNeighbors(data_current[[j]], dims = 1:selected_pcs)
       data_current[[j]] <- FindClusters(data_current[[j]], resolution = 0.8)
-      data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
-      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+      data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
       plotx <- gen10x_plotx(data_current[[j]])
       plotx$CLUSTER <- Idents(data_current[[j]])
       plotx$CLUSTER <- factor(plotx$CLUSTER, levels = sort(as.numeric(as.character(unique(plotx$CLUSTER)))))
-      ccolors <- gen_colors(color_conditions$colorful,length(levels(plotx$CLUSTER)))
+      ccolors <- gen_colors(n = length(levels(plotx$CLUSTER)))
       names(ccolors) <- levels(plotx$CLUSTER)
 
       p1 <- NULL
@@ -536,6 +621,18 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
               plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 
+if(run_unbias_vis == "YES"){
+      cumap <- NULL
+      cumap <- data_current[[j]]@reductions$umap@cell.embeddings
+      cumapplot <- NULL
+      cumapplot <- scubi_expression(dim1 = cumap[,"UMAP_1"], dim2 = cumap[,"UMAP_2"], count = data_current[[j]]@assays$RNA@counts, gene = as.list(current_out$top1$gene))
+
+      somePDFPath = paste(cdir,"22URSA_PLOT_scRNASEQ_SCUBI_UNBIASED_VIS_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
+      pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=12)
+      print(cumapplot + plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      dev.off()
+}
+
       somePDFPath = paste(cdir,"23URSA_PLOT_scRNASEQ_VIOLIN_TOP_",n,"_MARKERS_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=16, height=10,pointsize=12)
 
@@ -543,7 +640,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
         current <- topn[which(topn$cluster == current_clusters[k]),]
         current <- current[order(current$p_val_adj, decreasing = F),]
         print(VlnPlot(data_current[[j]], features = current$gene, pt.size = 0,
-                      ncol = 4, cols = gen_colors(color_conditions$colorful,length(unique(data_current[[j]]$seurat_clusters))))&
+                      ncol = 4, cols = gen_colors(n = length(unique(data_current[[j]]$seurat_clusters))))&
                 xlab("CLUSTERS")&
                 plot_annotation(title = paste("TOP",n,": ",current_out$de_name, annot_names[j], " - CLUSTER ", current_clusters[k], sep = ""),
                                 theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold"))))
@@ -599,7 +696,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
       write.table(plotx, paste(cdir, "25URSA_TABLE_scRNASEQ_UMAP_TSNE_PCA_COORDINATES_CLUSTERS_",annot_names[j],"_",project_name,".txt", sep = ""), quote = F, row.names = F, sep = "\t")
 
-      cct_colors <- gen_colors(color_conditions$tenx,length(unique(plotx$CELL_TYPE)))
+      cct_colors <- gen_colors(n = length(unique(plotx$CELL_TYPE)))
       names(cct_colors) <- sort(unique(plotx$CELL_TYPE))
 
       somePDFPath = paste(cdir,"26URSA_PLOT_scRNASEQ_UMAP_AUTO_CELL_TYPE_IDENTIFICATION_",annot_names[j],"_",project_name,".pdf", sep = "")
@@ -887,7 +984,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
         dev.off()
 
         cell_types <- sort(as.character(unique(top_markers_cell_type$CELL_TYPE)))
-        colors <- gen_colors(color_conditions$colorful,length(cell_types))
+        colors <- gen_colors(n = length(cell_types))
 
         p1 <- NULL
         p2 <- NULL
@@ -952,7 +1049,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     data_current <- lapply(data_current, function(x){
       # x <- ScaleData(x, verbose=F, features = data_features, vars.to.regress = c("nCount_RNA", "Percent_Mito"))
       # x <- RunPCA(x, npcs = 30, verbose = FALSE, features = data_features)
-      x <- NormalizeData(x)
+      # x <- NormalizeData(x)
       x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
       # x <- RunPCA(x, npcs = 30, verbose = FALSE, features = VariableFeatures(x))
     })
@@ -968,8 +1065,18 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     data <- FindVariableFeatures(data, selection.method = "vst", nfeatures = 2000)
     data <- ScaleData(data, verbose = FALSE)
     data <- RunPCA(data, verbose = FALSE)
-    data <- RunUMAP(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
-    data <- RunTSNE(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+
+    selected_pcs <- NULL
+    if(class(overall_pcs) == "numeric"){
+      selected_pcs <- overall_pcs
+    }else if (toupper(overall_pcs) == toupper("all")){
+      selected_pcs <- findPC(sdev = data@reductions$pca@stdev, number = 50, method = 'all',aggregate = 'mean')
+    }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+      selected_pcs <- findPC(sdev = data@reductions$pca@stdev, number = 50, method = tolower(overall_pcs))
+    }
+
+    data <- RunUMAP(data, reduction = "pca", dims = 1:selected_pcs)
+    data <- RunTSNE(data, reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
     data_dim <- data.frame(gen10x_plotx(data), DATA_TYPE = "BEFORE_INTEGRATION", SAMPLE_ID = data$orig.ident)
 
     write.table(data_dim, paste(cdir, "42URSA_TABLE_scRNASEQ_DIM_PARAMETERS_BEFORE_INTEGRATION_", project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
@@ -981,16 +1088,26 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
       reduction_method <- "pca"
 
       data <- RunPCA(data, verbose = FALSE)
-      data <- RunUMAP(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
-      data <- RunTSNE(data, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
+      data <- RunUMAP(data, reduction = "pca", dims = 1:selected_pcs)
+      data <- RunTSNE(data, reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
       current <- cbind(data.frame(gen10x_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
     }else if(toupper(integration_method) == "HARMONY"){
       integration_name <- "HARMONY_INTEGRATED"
       DefaultAssay(data) <- "RNA"
       reduction_method <- "harmony"
       data <- RunHarmony(data, group.by.vars = "BATCH")
-      data <- RunUMAP(data, reduction = "harmony", dims = 1:ifelse(length(data@reductions$harmony) < 20, length(data@reductions$harmony), 20))
-      data <- RunTSNE(data, reduction = "harmony", dims = 1:ifelse(length(data@reductions$harmony) < 20, length(data@reductions$harmony), 20), check_duplicates = FALSE)
+
+      selected_pcs <- NULL
+      if(class(overall_pcs) == "numeric"){
+        selected_pcs <- overall_pcs
+      }else if (toupper(overall_pcs) == toupper("all")){
+        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = 'all',aggregate = 'mean')
+      }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = tolower(overall_pcs))
+      }
+
+      data <- RunUMAP(data, reduction = "harmony", dims = 1:selected_pcs)
+      data <- RunTSNE(data, reduction = "harmony", dims = 1:selected_pcs, check_duplicates = FALSE)
       current <- cbind(data.frame(genharmony_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
     }
 
@@ -1044,7 +1161,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     data_dim$GROUP <- data@meta.data[match(data_dim$SAMPLE_ID, data$orig.ident),"GROUP"]
     data_dim$BATCH <- data@meta.data[match(data_dim$SAMPLE_ID, data$orig.ident),"BATCH"]
 
-    cgroup_colors <- gen_colors(color_conditions$bright,length(unique(data_dim$GROUP)))
+    cgroup_colors <- gen_colors(n = length(unique(data_dim$GROUP)))
     names(cgroup_colors) <- sort(unique(data_dim$GROUP))
 
     somePDFPath = paste(cdir,"47URSA_PLOT_scRNASEQ_BY_GROUP_UMAP_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
@@ -1084,7 +1201,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
             plot_annotation(title = project_name, theme = theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5))))
     dev.off()
 
-    cbatch_colors <- gen_colors(color_conditions$general,length(unique(data_dim$BATCH)))
+    cbatch_colors <- gen_colors(n = length(unique(data_dim$BATCH)))
     names(cbatch_colors) <- sort(unique(data_dim$BATCH))
 
     somePDFPath = paste(cdir,"50URSA_PLOT_scRNASEQ_BY_BATCH_UMAP_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
@@ -1135,7 +1252,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
 
     ############## Integration Plots #################################################################
     DefaultAssay(data) <- "integrated"
-    somePDFPath = paste(cdir,"54URSA_PLOT_scRNASEQ_HEATMAP_PC1_TOP_FEATURES_INTEGRATED_",project_name,".pdf", sep = "")
+    somePDFPath = paste(cdir,"54URSA_PLOT_scRNASEQ_HEATMAP_PC1_TO_15_TOP_FEATURES_INTEGRATED_",project_name,".pdf", sep = "")
     pdf(file=somePDFPath, width=8, height=16,pointsize=12)
     print(DimHeatmap(data, assays = ifelse(toupper(integration_method) == "SEURAT", "integrated", "RNA"),
                                         reduction = ifelse(toupper(integration_method) == "SEURAT", "pca", "harmony"),
@@ -1143,7 +1260,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
       plot_annotation(title = paste(project_name, sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
     dev.off()
 
-    data <- FindNeighbors(data, reduction = reduction_method, dims = 1:ifelse(ncol(data) < 30, ncol(data), 30))
+    data <- FindNeighbors(data, reduction = reduction_method, dims = 1:selected_pcs)
     data <- FindClusters(data, resolution = 0.8)
 
     if(integration_method == "HARMONY"){
@@ -1159,7 +1276,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     current_clusters <- sort(as.numeric(as.character(unique(Idents(data)))),decreasing = F)
 
     groups <- sort(unique(plotx$GROUP))
-    cluster_colors <- gen_colors(color_conditions$colorful,length(levels(plotx$CLUSTER)))
+    cluster_colors <- gen_colors(n = length(levels(plotx$CLUSTER)))
     names(cluster_colors) <- levels(plotx$CLUSTER)
 
     p1 <- NULL
@@ -1264,7 +1381,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     plotx <- gen10x_plotx(data, include_meta = T)
     write.table(data.frame(plotx), paste(cdir, "61URSA_TABLE_scRNASEQ_AUTO_ANNOTATION_CELL_TYPE_META_",integration_name,"_",project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
 
-    ct_colors <- gen_colors(color_conditions$bright,length(unique(plotx$INTEGRATED_CELL_TYPE)))
+    ct_colors <- gen_colors(n = length(unique(plotx$INTEGRATED_CELL_TYPE)))
     names(ct_colors) <- sort(unique((plotx$INTEGRATED_CELL_TYPE)))
 
     somePDFPath = paste(cdir,"62URSA_PLOT_scRNASEQ_UMAP_AUTO_CELL_TYPE_IDENTIFICATION_",integration_name,"_",project_name,".pdf", sep = "")
@@ -1593,7 +1710,8 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
       somePDFPath = paste(cdir,"78URSA_PLOT_scRNASEQ_UMAP_DENSITY_TOP_1_MARKER_BY_DE_GROUP_EACH_CLUSTER_",integration_name,"_",project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=10, height=5,pointsize=12)
       for(i in 1:length(current_out$featureplot)){
-        print(current_out$featureplot[[i]])}
+        print(current_out$featureplot[[i]])
+        }
       dev.off()
     }
   }
@@ -1621,7 +1739,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
     mono3_current[[j]]@clusters@listData[["UMAP"]][["louvain_res"]] <- "NA"
     mono3_current[[j]] <- learn_graph(mono3_current[[j]])
 
-    ccolors <- gen_colors(color_conditions$colorful,length(unique(mono3_current[[j]]@clusters$UMAP$clusters)))
+    ccolors <- gen_colors(n = length(unique(mono3_current[[j]]@clusters$UMAP$clusters)))
     names(ccolors) <- sort(as.numeric(as.character(unique(mono3_current[[j]]@clusters$UMAP$clusters))))
 
     p <- NULL
@@ -1738,7 +1856,16 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
     }
     dev.off()
 
-    data_current[[j]] <- RunUMAP(data_current[[j]], n.components = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+    selected_pcs <- NULL
+    if(class(overall_pcs) == "numeric"){
+      selected_pcs <- overall_pcs
+    }else if (toupper(overall_pcs) == toupper("all")){
+      selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = 'all',aggregate = 'mean')
+    }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+      selected_pcs <- findPC(sdev = data_current[[j]]@reductions$pca@stdev, number = 50, method = tolower(overall_pcs))
+    }
+
+    data_current[[j]] <- RunUMAP(data_current[[j]], n.components = 3, reduction = "pca", dims = 1:selected_pcs)
 
     p <- NULL
     p <- plot_3d(data_current[[j]]@reductions$umap@cell.embeddings[,"UMAP_1"],
@@ -1755,7 +1882,7 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
 
     htmlwidgets::saveWidget(p, paste(cdir, "86URSA_PLOT_scRNASEQ_UMAP_INTERACTIVE_CELL_TYPES_",annot_names[j],"_",project_name,".html", sep = ""))
 
-    data_current[[j]] <- RunTSNE(data_current[[j]], dim.embed = 3, reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
+    data_current[[j]] <- RunTSNE(data_current[[j]], dim.embed = 3, reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
 
     p <- NULL
     p <- plot_3d(data_current[[j]]@reductions$tsne@cell.embeddings[,"tSNE_1"],
@@ -1798,8 +1925,8 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
                                                               data_current[[j]]$seurat_clusters, sep = ""))
     htmlwidgets::saveWidget(p, paste(cdir, "89URSA_PLOT_scRNASEQ_TSNE_INTERACTIVE_CLUSTERS_",annot_names[j],"_",project_name,".html", sep = ""))
 
-    data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30), check_duplicates = FALSE)
-    data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:ifelse(length(data_current[[j]]@reductions$pca) < 30, length(data_current[[j]]@reductions$pca), 30))
+    data_current[[j]] <- RunTSNE(data_current[[j]], reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
+    data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
   }
 
   if(length(data_current) > 1){
@@ -1920,13 +2047,22 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
 
     if(toupper(reduction_method) == "HARMONY"){
       DefaultAssay(data) <- 'RNA'
-      data <- RunTSNE(data, dim.embed = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
-      data <- RunUMAP(data, n.components = 3, reduction = "harmony", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+      selected_pcs <- NULL
+      if(class(overall_pcs) == "numeric"){
+        selected_pcs <- overall_pcs
+      }else if (toupper(overall_pcs) == toupper("all")){
+        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = 'all',aggregate = 'mean')
+      }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
+        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = tolower(overall_pcs))
+      }
+
+      data <- RunTSNE(data, dim.embed = 3, reduction = "harmony", dims = 1:selected_pcs, check_duplicates = FALSE)
+      data <- RunUMAP(data, n.components = 3, reduction = "harmony", dims = 1:selected_pcs)
 
     }else if(reduction_method == "pca"){
       DefaultAssay(data) <- 'integrated'
-      data <- RunTSNE(data, dim.embed = 3, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30), check_duplicates = FALSE)
-      data <- RunUMAP(data, n.components = 3, reduction = "pca", dims = 1:ifelse(length(data@reductions$pca) < 30, length(data@reductions$pca), 30))
+      data <- RunTSNE(data, dim.embed = 3, reduction = "pca", dims = 1:selected_pcs, check_duplicates = FALSE)
+      data <- RunUMAP(data, n.components = 3, reduction = "pca", dims = 1:selected_pcs)
     }
 
     p <- NULL

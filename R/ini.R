@@ -5,9 +5,10 @@ time_ini <- function(){
   return(x)
 }
 
-gen_colors <- function(col = NULL,n, lum = "light"){
+gen_colors <- function(col = NULL, n, lum = "light"){
   if(is.null(col)){
-    col <- circlize::rand_color(n = n, luminosity = lum)
+    set.seed(9)
+    col <- randomcoloR::distinctColorPalette(k = n, runTsne = T)
   }else{
     col <- colorRampPalette(col)(n)
   }
