@@ -242,7 +242,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
 
       print(paste("Selected number of PCs to use for sample ", annot_names[j], ": ", selected_pcs, sep = ""))
 
-      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:selected_pcs)
+      data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(ncol(data_current[[j]]@reductions$pca_selected@cell.embeddings) < selected_pcs, ncol(data_current[[j]]@reductions$pca_selected@cell.embeddings), selected_pcs))
       data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
       data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
@@ -304,7 +304,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
         data_current[[j]]@assays$RNA@data <- cimpute_norm
       }
 
-      data_current[[j]]@assays$RNA@data@x[is.na(data_current[[j]]@assays$RNA@data@x)] <- 0
+      data_current[[j]]@assays$RNA@data[is.na(data_current[[j]]@assays$RNA@data)] <- 0
       data_current[[j]] <- FindVariableFeatures(data_current[[j]],selection.method = "vst")
       data_current[[j]] <- ScaleData(data_current[[j]], features = rownames(data_current)[j])
 
@@ -346,7 +346,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
         }
 
         data_current[[j]] <- RunPCA(data_current[[j]], features = VariableFeatures(data_current[[j]]))
-        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:selected_pcs)
+        data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca_selected", dims = 1:ifelse(ncol(data_current[[j]]@reductions$pca_selected@cell.embeddings) < selected_pcs, ncol(data_current[[j]]@reductions$pca_selected@cell.embeddings), selected_pcs))
         data_current[[j]]@reductions$umap_selected <- data_current[[j]]@reductions$umap
         data_current[[j]] <- RunUMAP(data_current[[j]], reduction = "pca", dims = 1:selected_pcs)
 
@@ -441,6 +441,7 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       cdoublets <- table(data_current[[j]]@meta.data[,cclassname])
       cdoublets <- cdoublets[grep("Doublet", names(cdoublets), ignore.case = T)]
       print(paste(annot_names[j],": found ",cdoublets, " doublets out of ", ncol(data_current[[j]])," cells..removing..", sep = ""))
+      Idents(data_current[[j]]) <- cclassname
       data_current[[j]] <- subset(data_current[[j]], cells = row.names(data_current[[j]]@meta.data[which(data_current[[j]]@meta.data[,cclassname] == "Singlet"),]))
 
       p1 <- NULL
@@ -488,15 +489,15 @@ scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
       print(p2+plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
       dev.off()
 
+      Idents(data_current[[j]]) <- "orig.ident"
+      data_current[[j]] <- RunPCA(data_current[[j]])
+
       somePDFPath = paste(cdir,"12URSA_PLOT_scRNASEQ_TOP_FEATURES_ASSOC_PC12_",annot_names[j],"_",project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=10, height=6,pointsize=12)
       print(VizDimLoadings(data_current[[j]], dims = 1:2, reduction = "pca",
                            col = color_conditions$manycolors[1])+
               plot_annotation(title = annot_names[j], theme = theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5))))
       dev.off()
-
-      Idents(data_current[[j]]) <- "orig.ident"
-      data_current[[j]] <- RunPCA(data_current[[j]])
 
       somePDFPath = paste(cdir,"13SCA_PLOT_VISUALIZE_PC12_", annot_names[j], "_", project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=8, height=6,pointsize=12)
@@ -625,7 +626,7 @@ if(run_unbias_vis == "YES"){
 
       somePDFPath = paste(cdir,"22URSA_PLOT_scRNASEQ_SCUBI_UNBIASED_VIS_UMAP_DENSITY_TOP_1_MARKER_IN_CLUSTERS_",annot_names[j],"_",project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=20, height=ceiling(length(top1$gene)/4)*5,pointsize=12)
-      print(cumapplot + plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
+      print(cumapplot + theme_classic(base_size = 20) + plot_annotation(title = paste("TOP1: ",de_name,annot_names[j], sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
       dev.off()
 }
 
@@ -727,9 +728,12 @@ if(run_unbias_vis == "YES"){
       if(length(which(is.na(topn$ENTREZ_ID))) > 0 & !(length(grep("ENS.*-.*", topn$gene)) > length(topn$gene)/2)){
         current <- topn[which(is.na(topn$ENTREZ_ID)),]
         current$alternate_gene <- hgnc.table[match(current$gene, hgnc.table$Symbol),"Approved.Symbol"]
-        current_id <- ensembldb::select(hs, keys = current$alternate_gene[!is.na(current$alternate_gene)], columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
-        current$ENTREZ_ID <- current_id[match(current$alternate_gene, current_id$SYMBOL),"ENTREZID"]
-        topn[which(is.na(topn$ENTREZ_ID)),"ENTREZ_ID"] <- current[match(as.character(unlist(topn[which(is.na(topn$ENTREZ_ID)),"gene"])), current$gene),"ENTREZ_ID"]
+        current <- current[which(current$gene != current$alternate_gene),]
+        if(nrow(current) > 0){
+          current_id <- ensembldb::select(hs, keys = current$alternate_gene[!is.na(current$alternate_gene)], columns = c("ENTREZID", "SYMBOL"), keytype = "SYMBOL")
+          current$ENTREZ_ID <- current_id[match(current$alternate_gene, current_id$SYMBOL),"ENTREZID"]
+          topn[which(is.na(topn$ENTREZ_ID)),"ENTREZ_ID"] <- current[match(as.character(unlist(topn[which(is.na(topn$ENTREZ_ID)),"gene"])), current$gene),"ENTREZ_ID"]
+        }
       }
       topn <- topn[!is.na(topn$ENTREZ_ID),]
 
