@@ -48,10 +48,6 @@
 #' @import findPC
 #' @import DoubletFinder
 #' @import scubi
-#' @import slingshot
-#' @import tscan
-#' @import tradeSeq
-#' @import Mclust
 #'
 NULL
 
