@@ -33,6 +33,7 @@
 #' @import celldex
 #' @import celltalker
 #' @import clusterProfiler
+#' @import ggupset
 #' @import DOSE
 #' @import enrichplot
 #' @import ensembldb
@@ -48,6 +49,7 @@
 #' @import findPC
 #' @import DoubletFinder
 #' @import scubi
+#' @import randomcoloR
 #'
 NULL
 
