@@ -349,6 +349,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
   if(length(bcr_list) > 0){
     contig_bcr <- combineBCR(contig_list[which(names(contig_list) %in% bcr_list)],
                              samples = bcr_pheno[match(bcr_list,bcr_pheno$SID),"SID"],
+                             ID = bcr_pheno[match(bcr_list,bcr_pheno$SID),"PAIR_ID"],
                              removeNA = TRUE)
     for(i in 1:length(contig_bcr)){
       contig_bcr[[i]]$ID <- bcr_pheno[match(bcr_list,bcr_pheno$SID),"INDIVIDUAL_ID"][i]
@@ -378,6 +379,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
     if(length(grep("TRUE", tab_presence, ignore.case = T)) > 0){
       contig_tcr_tab <- combineTCR(contig_tcr[which(tab_presence == "TRUE")],
                                    samples = tcr_pheno[match(names(contig_tcr[which(tab_presence == "TRUE")]),tcr_pheno$SID),"SID"],
+                                   ID = tcr_pheno[match(names(contig_tcr[which(tab_presence == "TRUE")]),tcr_pheno$SID),"PAIR_ID"],
                                    removeNA = TRUE,
                                    cells = "T-AB")
       for(i in 1:length(contig_tcr_tab)){
@@ -394,7 +396,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
                                    samples = pheno_data[match(names(contig_tcr[which(tgd_presence == "TRUE")]),pheno_data$SAMPLE_ID),"SID"],
                                    # samples = pheno_data[match(names(contig_tcr[which(tgd_presence == "TRUE")]),pheno_data$SAMPLE_ID),"PAIR_ID"],
                                    removeNA = TRUE,
-                                   # ID = pheno_data[match(names(contig_tcr[which(tgd_presence == "TRUE")]),pheno_data$SAMPLE_ID),"INDIVIDUAL_ID"],
+                                   ID = pheno_data[match(names(contig_tcr[which(tgd_presence == "TRUE")]),pheno_data$SAMPLE_ID),"PAIR_ID"],
                                    cells = "T-GD")
       for(i in 1:length(contig_tcr_tgd)){
         contig_tcr_tgd[[i]]$ID <- pheno_data[match(names(contig_tcr[which(tgd_presence == "TRUE")]),pheno_data$SID),"SID"][i]
