@@ -381,16 +381,13 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     DefaultAssay(current_seurat) <- "peaks"
     if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
       main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg19)
-      keep.peaks <- as.logical(seqnames(granges(current_seurat)) %in% main.chroms)
-      current_seurat <- current_seurat[keep.peaks, ]
-      current_seurat <- RegionStats(current_seurat, genome = main.chroms)
     }else if(length(grep("hg38|grch38|38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
       main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg38)
-      keep.peaks <- as.logical(seqnames(granges(current_seurat)) %in% main.chroms)
-      current_seurat <- current_seurat[keep.peaks, ]
-      current_seurat <- RegionStats(current_seurat, genome = main.chroms)
     }
 
+    keep.peaks <- which(as.character(seqnames(granges(current_seurat))) %in% main.chroms)
+    current_seurat <- subset(current_seurat, features = rownames(current_seurat)[keep.peaks])
+    current_seurat <- RegionStats(current_seurat, genome = main.chroms)
 
     print(paste("Linking peaks to genes for ", pheno_data[i,"FILE"], "..", sep = ""))
     current_seurat <- LinkPeaks(
