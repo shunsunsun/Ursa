@@ -755,6 +755,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
 
     orig_names <- row.names(data@meta.data)
     row.names(data@meta.data) <- paste(gsub("_CONTIG$|_SCRNA$","",data$SID, ignore.case = T),
+                                       data$PAIR_ID,
                                        row.names(data@meta.data), sep = "_")
     row.names(data@meta.data) <- gsub("_[0-9]+$","",row.names(data@meta.data), ignore.case = T)
     cmultiplexs <- rna_pheno[grep("ALL.*CELL", rna_pheno$CELL_TYPE, ignore.case = T),"SID"]
@@ -774,6 +775,7 @@ scImmunePip <- function(project_name = "Ursa_scImmune",
         if(length(which(toupper(names(current)[j]) %in% toupper(cmultiplex_tbcr))) > 0){
           current[[j]]$barcode <- gsub("_BCR|_TCR","",current[[j]]$barcode, ignore.case = T)
         }
+        current[[j]]$barcode <- gsub("_BCR|_TCR","",current[[j]]$barcode, ignore.case = T)
         current[[j]]$barcode <- gsub("_CONTIG|_CONSENSUS","",current[[j]]$barcode, ignore.case = T)
         current[[j]]$barcode <- gsub("_[0-9]+$","",current[[j]]$barcode, ignore.case = T)
         data@meta.data[which(row.names(data@meta.data) %in% current[[j]]$barcode),"DATA_TYPE"] <- unique(current[[j]][,which(toupper(colnames(current[[j]])) %in% toupper("cellType"))])[1]
