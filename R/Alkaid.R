@@ -338,6 +338,19 @@ scATACPip <- function(project_name = "Ursa_scATAC",
 
     print(paste("Done with top peaks search for ", pheno_data[i,"FILE"], "..", sep = ""))
 
+    cref <- NULL
+    DefaultAssay(current_seurat) <- "peaks"
+    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
+      cref <- BSgenome.Hsapiens.UCSC.hg19
+      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg19)
+    }else if(length(grep("hg38|grch38|38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
+      cref <- BSgenome.Hsapiens.UCSC.hg38
+      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg38)
+    }
+
+    keep.peaks <- which(as.character(seqnames(granges(current_seurat))) %in% main.chroms)
+    current_seurat <- subset(current_seurat, features = rownames(current_seurat)[keep.peaks])
+
     print(paste("Deciphering gene activities for ", pheno_data[i,"FILE"], "..", sep = ""))
     gene_activities <- GeneActivity(current_seurat)
     current_seurat[['ACTIVITY']] <- CreateAssayObject(counts = gene_activities)
@@ -376,18 +389,8 @@ scATACPip <- function(project_name = "Ursa_scATAC",
 
     top1_derivedrna <- do.call(rbind.data.frame, top1_derivedrna)
 
-
     print(paste("Generating regional statistics for ", pheno_data[i,"FILE"], "..", sep = ""))
-    DefaultAssay(current_seurat) <- "peaks"
-    if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg19)
-    }else if(length(grep("hg38|grch38|38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg38)
-    }
-
-    keep.peaks <- which(as.character(seqnames(granges(current_seurat))) %in% main.chroms)
-    current_seurat <- subset(current_seurat, features = rownames(current_seurat)[keep.peaks])
-    current_seurat <- RegionStats(current_seurat, genome = main.chroms)
+    current_seurat <- RegionStats(current_seurat, genome = cref)
 
     print(paste("Linking peaks to genes for ", pheno_data[i,"FILE"], "..", sep = ""))
     current_seurat <- LinkPeaks(
