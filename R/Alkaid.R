@@ -110,6 +110,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       current_meta <- "NO"
     }
 
+    options(download.file.method = "curl")
     if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
       ref_genome <- "hg19"
       ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
@@ -379,9 +380,15 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     print(paste("Generating regional statistics for ", pheno_data[i,"FILE"], "..", sep = ""))
     DefaultAssay(current_seurat) <- "peaks"
     if(length(grep("hg19",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RegionStats(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg19)
+      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg19)
+      keep.peaks <- as.logical(seqnames(granges(current_seurat)) %in% main.chroms)
+      current_seurat <- current_seurat[keep.peaks, ]
+      current_seurat <- RegionStats(current_seurat, genome = main.chroms)
     }else if(length(grep("hg38|grch38|38",pheno_data[i,"REF_GENOME"], ignore.case = T)) > 0){
-      current_seurat <- RegionStats(current_seurat, genome = BSgenome.Hsapiens.UCSC.hg38)
+      main.chroms <- standardChromosomes(BSgenome.Hsapiens.UCSC.hg38)
+      keep.peaks <- as.logical(seqnames(granges(current_seurat)) %in% main.chroms)
+      current_seurat <- current_seurat[keep.peaks, ]
+      current_seurat <- RegionStats(current_seurat, genome = main.chroms)
     }
 
 
@@ -647,6 +654,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       }
     }
 
+    options(download.file.method = "curl")
     if(length(grep("hg19",data_ref, ignore.case = T)) > 0){
       ref_genome <- "hg19"
       ref_annot <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v75)
