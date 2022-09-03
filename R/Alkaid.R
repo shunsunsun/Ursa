@@ -390,6 +390,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
     top1_derivedrna <- do.call(rbind.data.frame, top1_derivedrna)
 
     print(paste("Generating regional statistics for ", pheno_data[i,"FILE"], "..", sep = ""))
+    DefaultAssay(current_seurat) <- "peaks"
     current_seurat <- RegionStats(current_seurat, genome = cref)
 
     print(paste("Linking peaks to genes for ", pheno_data[i,"FILE"], "..", sep = ""))
