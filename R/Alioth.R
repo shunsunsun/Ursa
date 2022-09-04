@@ -1135,7 +1135,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
                               maintitle = project_name, titlesize = 35, col = sample_colors))
     dev.off()
 
-    if(integration_method == "SEURAT"){
+    if(toupper(integration_method) == "SEURAT"){
 
       somePDFPath = paste(cdir,"46URSA_PLOT_scRNASEQ_PCA_BEFORE_AFTER_",integration_method, "_INTEGRATION_", project_name,".pdf", sep = "")
       pdf(file=somePDFPath, width=30, height=15,pointsize=12)
@@ -1145,7 +1145,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
                                                    subtitle1 = "BEFORE_INTEGRATION", subtitle2 = integration_name,
                                                    maintitle = project_name, titlesize = 35, col = sample_colors))
       dev.off()
-    }else if(integration_method == "HARMONY"){
+    }else if(toupper(integration_method) == "HARMONY"){
       p1 <- NULL
       p2 <- NULL
       p1 <- plot_bygroup(data_dim[data_dim$DATA_TYPE == "BEFORE_INTEGRATION",], x = "PC_1", y = "PC_2", group = "SAMPLE_ID", plot_title = "BEFORE_INTEGRATION",
@@ -1262,10 +1262,14 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
       plot_annotation(title = paste(project_name, sep = ""), theme = theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))))
     dev.off()
 
+    if(toupper(integration_method) == "HARMONY"){
+      DefaultAssay(data) <- "RNA"
+    }
+
     data <- FindNeighbors(data, reduction = reduction_method, dims = 1:selected_pcs)
     data <- FindClusters(data, resolution = 0.8)
 
-    if(integration_method == "HARMONY"){
+    if(toupper(integration_method) == "HARMONY"){
       integration_cluster <- "RNA_snn_res.0.8"
     }else{
       integration_cluster <- "integrated_snn_res.0.8"
