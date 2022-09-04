@@ -1110,7 +1110,7 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
 
       data <- RunUMAP(data, reduction = "harmony", dims = 1:selected_pcs)
       data <- RunTSNE(data, reduction = "harmony", dims = 1:selected_pcs, check_duplicates = FALSE)
-      current <- cbind(data.frame(gen10x_plotx(data, selected = c("HARMONY","UMAP","TSNE")), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
+      current <- cbind(data.frame(gen10x_plotx(data, selected = c("HARMONY","UMAP","TSNE"), include_meta = T), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
     }
 
     write.table(current, paste(cdir, "43URSA_TABLE_scRNASEQ_DIM_PARAMETERS_AFTER_", integration_method, "_INTEGRATION_", project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
