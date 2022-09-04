@@ -81,7 +81,7 @@ NULL
 #' @param num_pcs Number of PCs or Harmonys (if harmony was chosen for integration) to be used for the analysis. Default to 30. Please state a reasonable number which is no more than the total number of cells submitted to avoid running into errors. This option will only be considered if option pc_selection_method is set to 'none'.
 #' @param to_impute Pass 'YES' to perform imputation on individual samples or 'NO' to skip imputation process. Default is set to 'NO'.
 #' @param find_doublet Pass 'YES' to perform doublets removal using DoubletFinder (Christopher S. M., Cell Systems, 2019). Default is set to 'NO'. If set to 'YES', doublets willbe removed using the true doublet rate (TDR).
-#' @export run_unbias_vis Plot additional unbias visualizations for top features using SCUBI (Wenpin H. & Zhicheng J., Cell Reports Methods, 2021) for dimensionally reduced plots such as UMAP. Pass 'YES' to plot, default to 'NO'.
+#' @param run_unbias_vis Plot additional unbias visualizations for top features using SCUBI (Wenpin H. & Zhicheng J., Cell Reports Methods, 2021) for dimensionally reduced plots such as UMAP. Pass 'YES' to plot, default to 'NO'.
 #'
 
 scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
