@@ -1103,14 +1103,14 @@ ggtitle(paste(annot_names[j], "\nGSEA Plot: Cluster ", names(pathway_EA_result)[
       if(class(overall_pcs) == "numeric"){
         selected_pcs <- overall_pcs
       }else if (toupper(overall_pcs) == toupper("all")){
-        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = 'all',aggregate = 'mean')
+        selected_pcs <- findPC(sdev = sort(data@reductions$harmony@stdev, decreasing = T), number = 50, method = 'all',aggregate = 'mean')
       }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
-        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = tolower(overall_pcs))
+        selected_pcs <- findPC(sdev = sort(data@reductions$harmony@stdev, decreasing = T), number = 50, method = tolower(overall_pcs))
       }
 
       data <- RunUMAP(data, reduction = "harmony", dims = 1:selected_pcs)
       data <- RunTSNE(data, reduction = "harmony", dims = 1:selected_pcs, check_duplicates = FALSE)
-      current <- cbind(data.frame(genharmony_plotx(data), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
+      current <- cbind(data.frame(gen10x_plotx(data, selected = c("HARMONY","UMAP","TSNE")), DATA_TYPE = integration_name, SAMPLE_ID = data$orig.ident))
     }
 
     write.table(current, paste(cdir, "43URSA_TABLE_scRNASEQ_DIM_PARAMETERS_AFTER_", integration_method, "_INTEGRATION_", project_name,".txt", sep = ""), quote = F, row.names = T, sep = "\t")
@@ -2053,9 +2053,9 @@ pdf(file=somePDFPath, width=12, height=10,pointsize=12)
       if(class(overall_pcs) == "numeric"){
         selected_pcs <- overall_pcs
       }else if (toupper(overall_pcs) == toupper("all")){
-        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = 'all',aggregate = 'mean')
+        selected_pcs <- findPC(sdev = sort(data@reductions$harmony@stdev, decreasing = T), number = 50, method = 'all',aggregate = 'mean')
       }else if(toupper(overall_pcs) %in% toupper(c('piecewise linear model', 'first derivative', 'second derivative', 'preceding residual', 'perpendicular line', 'k-means clustering'))){
-        selected_pcs <- findPC(sdev = data@reductions$harmony@stdev, number = 50, method = tolower(overall_pcs))
+        selected_pcs <- findPC(sdev = sort(data@reductions$harmony@stdev, decreasing = T), number = 50, method = tolower(overall_pcs))
       }
 
       data <- RunTSNE(data, dim.embed = 3, reduction = "harmony", dims = 1:selected_pcs, check_duplicates = FALSE)
