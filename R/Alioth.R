@@ -85,7 +85,7 @@ NULL
 #' 1 for regression with two-phases, 2 for regression with phase
 #' difference (See Seurat). Default is 0.
 #' @param pc_selection_method Select a method to run an automatic selection
-#' of the number of principal components (PCs) or Harmonys(if harmony was
+#' of the number of principal components (PCs) or Harmonys (if harmony was
 #' chosen for integration). Methods include 'none', 'all', 'piecewise linear
 #' model', 'first derivative', 'second derivative', 'preceding residual',
 #' 'perpendicular line', and 'k-means clustering'. Default is set to 'none',
