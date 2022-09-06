@@ -82,6 +82,7 @@ NULL
 #' @param to_impute Pass 'YES' to perform imputation on individual samples or 'NO' to skip imputation process. Default is set to 'NO'.
 #' @param find_doublet Pass 'YES' to perform doublets removal using DoubletFinder (Christopher S. M., Cell Systems, 2019). Default is set to 'NO'. If set to 'YES', doublets willbe removed using the true doublet rate (TDR).
 #' @param run_unbias_vis Plot additional unbias visualizations for top features using SCUBI (Wenpin H. & Zhicheng J., Cell Reports Methods, 2021) for dimensionally reduced plots such as UMAP. Pass 'YES' to plot, default to 'NO'.
+#' @export
 #'
 
 scRNASEQPip <- function(project_name = "Ursa_scRNASEQ",
