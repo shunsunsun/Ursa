@@ -716,7 +716,7 @@ scATACPip <- function(project_name = "Ursa_scATAC",
       }
     }
   }
-  saveRDS(results, paste(cdir,"20URSA_DATA_scATAC_",project_name,".png", sep = ""))
+  saveRDS(results, paste(cdir,"20URSA_DATA_scATAC_",project_name,".RDS", sep = ""))
   print("Completed!")
 }
 
