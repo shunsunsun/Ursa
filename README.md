@@ -25,7 +25,7 @@ Please download the example sample files and their meta files from the following
 
 ## Running single-cell analysis with Ursa
 ### 1. scRNA-sequencing*
-#### (1) Download example dataset from original source [__10X__](https://www.10xgenomics.com/resources/datasets/10k-human-pbmcs-3-v3-1-chromium-controller-3-1-high) or from the following [__Link__](https://www.dropbox.com/sh/6q75ik2egtfai7q/AABkXelU7Iyz_cWmbdtSlpUMa?dl=0)
+#### (1) Download example dataset from original source [__10X__](https://www.10xgenomics.com/resources/datasets/10k-human-pbmcs-3-v3-1-chromium-controller-3-1-high) or from the following [__link__](https://www.dropbox.com/sh/6q75ik2egtfai7q/AABkXelU7Iyz_cWmbdtSlpUMa?dl=0)
 The following input file(s) from the example data are needed in the input directory before running the analysis:
 - filtered gene matrix .h5 file: Feature / cell matrix HDF5 (filtered)
 - sample meta file (in .csv format) with the following file content:
