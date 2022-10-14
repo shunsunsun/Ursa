@@ -21,7 +21,7 @@ Ursa can be installed in R via the command:
 install.packages("devtools")
 devtools::install_github("eudoraleer/Ursa")
 ```
-Please download the example sample files and their meta files from the following [__link__](__https://www.dropbox.com/sh/zdi0554bf07spoo/AAAZNk_jsrFa53tg4CsGfU2ua?dl=0__) with respect to the omics you will be running. Original file sources can be found below. Multiple samples are supported if information in the meta data is corrected provided.
+Please download the example sample files and their meta files from the following [__link__](https://www.dropbox.com/sh/zdi0554bf07spoo/AAAZNk_jsrFa53tg4CsGfU2ua?dl=0) with respect to the omics you will be running. Original file sources can be found below. Multiple samples are supported if information in the meta data is corrected provided.
 
 ## Running single-cell analysis with Ursa
 ### 1. scRNA-sequencing*
