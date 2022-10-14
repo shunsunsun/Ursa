@@ -1,7 +1,7 @@
 ############################################################################################################
 # Ursa: an automated multi-omics package for single-cell analysis
 # Megrez: scCNV
-# Version: V1.0.0
+# Version: V1.1.0
 # Creator: Lu Pan, Karolinska Institutet, lu.pan@ki.se
 # Date: 2022-02-15
 ############################################################################################################

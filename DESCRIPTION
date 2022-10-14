@@ -1,7 +1,7 @@
 Package: Ursa
 Type: Package
 Title: An Automated Multi-omics Package for Single-cell Analysis
-Version: 1.0.0
+Version: 1.1.0
 Author: Lu Pan <lu.pan@ki.se>
 Maintainer: Lu Pan <lu.pan@ki.se>
 Description: Ursa contains 7 major single cell omics automated workflows, including scRNA-seq, scATAC-seq, scImmune profiling, spatial transcriptomics, scCNV, CyTOF and flow cytometry.
